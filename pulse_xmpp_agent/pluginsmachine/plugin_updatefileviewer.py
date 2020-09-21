@@ -161,6 +161,8 @@ def updatebootstrap(xmppobject):
         # Download error
         logger.error("%s" % txtmsg_js)
 
+    write_version_in_file("bootstrap", BOOTSTRAP)
+
 def updatejquery(xmppobject):
     logger.info("Updating JQuery to version %s" % JQUERY)
 
@@ -196,6 +198,8 @@ def updatejquery(xmppobject):
     else:
         # Download error
         logger.error("%s" % txtmsg_js)
+
+    write_version_in_file("jquery", JQUERY)
 
 def updatejqueryui(xmppobject):
     logger.info("Updating JQuery UI to version %s" % JQUERY)
@@ -246,3 +250,5 @@ def updatejqueryui(xmppobject):
     else:
         # Download error
         logger.error("%s" % txtmsg_js)
+
+    write_version_in_file("jqueryui", JQUERYUI)
