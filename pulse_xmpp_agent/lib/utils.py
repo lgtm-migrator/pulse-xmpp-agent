@@ -20,7 +20,11 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
 
-# file : pulse_xmpp_agent/lib/utils.py
+"""
+File : pulse_xmpp_agent/lib/utils.py
+
+Function : main lib for the agent.
+"""
 
 import netifaces
 import json
@@ -158,6 +162,12 @@ def Setdirectorytempinfo():
 
 
 def cleanbacktodeploy(objectxmpp):
+    """
+    Clean deploy sessions
+
+    Param:
+        objectxmpp xmpp object is a reference to the main object
+    """
     delsession = [
         session for session in objectxmpp.back_to_deploy if not objectxmpp.session.isexist(session)]
     for session in delsession:
@@ -181,6 +191,12 @@ def networkinfoexist():
     return False
 
 def save_count_start():
+    """
+    Add 1 to countstart file. If the file doesn't exist, it is created with a count set to 1.
+
+    Returns:
+        int representing the count
+    """
     filecount = os.path.join(Setdirectorytempinfo(), 'countstart')
     if not os.path.exists(filecount):
         file_put_contents(filecount, "1")
@@ -199,16 +215,34 @@ def save_count_start():
 
 
 def save_back_to_deploy(obj):
+    """
+    Launch the save routine for deployment sessions.
+
+    Param:
+        obj list of sessions
+    """
     fileback_to_deploy = os.path.join(Setdirectorytempinfo(), 'back_to_deploy')
     save_obj(obj, fileback_to_deploy)
 
 
 def load_back_to_deploy():
+    """
+    Launch the load routine for deployment sessions.
+
+    Returns:
+        object unserialized contained in fileback_to_deploy file
+    """
+
     fileback_to_deploy = os.path.join(Setdirectorytempinfo(), 'back_to_deploy')
     return load_obj(fileback_to_deploy)
 
 
 def listback_to_deploy(objectxmpp):
+    """
+    Print the deployment sessions list. (Debug function)
+    Param:
+        objectxmpp a reference to the main object
+    """
     if len(objectxmpp.back_to_deploy) != 0:
         print "list session pris en compte back_to_deploy"
         for u in objectxmpp.back_to_deploy:
@@ -216,6 +250,17 @@ def listback_to_deploy(objectxmpp):
 
 
 def testagentconf(typeconf):
+    """
+    Test if some configuration variables are presents. This test is mandatory for
+    machine agents.
+
+    Param:
+        typeconf string ("relayserver" | "machine") representing the type of the
+            current running agent.
+
+    Returns:
+        boolean
+    """
     if typeconf == "relayserver":
         return True
     Config = ConfigParser.ConfigParser()
@@ -234,6 +279,12 @@ def testagentconf(typeconf):
 
 
 def createfingerprintnetwork():
+    """
+    Create fingerprint (a md5 sum) to qualify the network
+
+    Returns:
+        string of the md5 sum
+    """
     md5network = ""
     if sys.platform.startswith('win'):
         obj = simplecommandstr("ipconfig")
@@ -248,11 +299,25 @@ def createfingerprintnetwork():
 
 
 def createfingerprintconf(typeconf):
+    """Read content stored in agent conf file and generates a md5 with that.
+
+    Params:
+        typeconf string representing the type of agent ("relayserver" | "machine")
+
+    Returns:
+        string of the md5 generated
+    """
     namefileconfig = conffilename(typeconf)
     return hashlib.md5(file_get_contents(namefileconfig)).hexdigest()
 
 
 def confinfoexist():
+    """
+    Test if the fingerprintconf file exists.
+
+    Returns:
+        boolean
+    """
     filenetworkinfo = os.path.join(Setdirectorytempinfo(), 'fingerprintconf')
     if os.path.exists(filenetworkinfo):
         return True
@@ -260,6 +325,13 @@ def confinfoexist():
 
 
 def confchanged(typeconf):
+    """
+    Generates a fingerprint with the current conf. Then check if ancient and new
+    fingerprints are the same.
+
+    Returns:
+        boolean
+    """
     if confinfoexist():
         fingerprintconf = file_get_contents(
             os.path.join(
@@ -272,6 +344,15 @@ def confchanged(typeconf):
 
 
 def refreshfingerprintconf(typeconf):
+    """
+    Regenerates the fingerprint specialized for the agent conf file.
+
+    Param:
+        typeconf string representing the agent type ("relayserver" | "machine")
+
+    Returns:
+        string of the md5 sum generated.
+    """
     fp = createfingerprintconf(typeconf)
     file_put_contents(
         os.path.join(
@@ -282,6 +363,12 @@ def refreshfingerprintconf(typeconf):
 
 
 def networkchanged():
+    """
+    Check if the fingerprintnetwork stored and a new generated one are the same.
+
+    Returns:
+        boolean
+    """
     if networkinfoexist():
         fingerprintnetwork = file_get_contents(os.path.join(
             Setdirectorytempinfo(), 'fingerprintnetwork'))
@@ -293,6 +380,12 @@ def networkchanged():
 
 
 def refreshfingerprint():
+    """
+    Refresh the network fingerprint in the fingerprintnetwork file
+
+    Returns:
+        string of the md5 sum
+    """
     fp = createfingerprintnetwork()
     file_put_contents(
         os.path.join(
@@ -303,6 +396,23 @@ def refreshfingerprint():
 
 def file_get_contents(filename, use_include_path=0,
                       context=None, offset=-1, maxlen=-1):
+    """
+    Get the content of the specified file.
+
+    Params:
+        - filename string of the absolute path to the file. If the source path
+        is a remote file (i.e.: http://url/path/to/file.json) the file is also
+        read.
+        - use_include_path int default 0 is not used
+        - context string default None is not used
+        - offset int default -1 specifies the offset of the first char read.
+            If offset = -1, the file is read from the start
+        - maxlen int default -1 specifies the number of char read.
+            If maxlen = -1, the file is read to the end
+
+    Returns:
+        string of the datas read in the file
+    """
     if filename.find('://') > 0:
         ret = urllib2.urlopen(filename).read()
         if offset > 0:
@@ -322,6 +432,14 @@ def file_get_contents(filename, use_include_path=0,
 
 
 def file_put_contents(filename, data):
+    """
+    Write datas in the specified file. If the file exists the content is overwritten.
+    If the directory is not existing, it is created.
+
+    Params:
+        - filename string of the path to the written file
+        - data string of content written into the specified file
+    """
     if not os.path.exists(os.path.dirname(filename)):
         os.makedirs(os.path.dirname(filename))
     f = open(filename, 'w')
@@ -330,6 +448,17 @@ def file_put_contents(filename, data):
 
 
 def file_put_contents_w_a(filename, data, option="w"):
+    """
+    Write datas in the specified file. The write access can be precized.
+    If the directory is not existing, it is created.
+
+    Params:
+        - filename string of the path to the written file
+        - data string of the content written into the specified file
+        - option string which precize if the file is written in "w" or "a" mode.
+            In w mode the datas are overwritten if the file exists
+            In a mode (append) the datas are added at the end of the existing file
+    """
     if not os.path.exists(os.path.dirname(filename)):
         os.makedirs(os.path.dirname(filename))
     if option == "a" or  option == "w":
@@ -340,7 +469,11 @@ def file_put_contents_w_a(filename, data, option="w"):
 
 def save_obj(obj, name):
     """
-    funct save serialised object
+    Save serialised object in the specified file.
+
+    Params:
+        - obj object which will be serialized
+        - name string of the file's path where the object will be saved
     """
     with open(name + '.pkl', 'wb') as f:
         pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
@@ -348,7 +481,13 @@ def save_obj(obj, name):
 
 def load_obj(name):
     """
-    function load serialized object
+    Load serialized object from .pkl file.
+
+    Param:
+        name string of the file path
+
+    Returns:
+        object loaded from the file
     """
     with open(name + '.pkl', 'rb') as f:
         return pickle.load(f)
