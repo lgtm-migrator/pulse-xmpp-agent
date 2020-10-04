@@ -242,6 +242,8 @@ def listback_to_deploy(objectxmpp):
     Print the deployment sessions list. (Debug function)
     Param:
         objectxmpp a reference to the main object
+
+    @TODO: CHECK IF IT's USED
     """
     if len(objectxmpp.back_to_deploy) != 0:
         print "list session pris en compte back_to_deploy"
@@ -494,29 +496,76 @@ def load_obj(name):
 
 
 def getCurrentWorkingDirectory():
+    """
+    Get the current root directory of the agent.
+
+    Returns:
+        string of the path
+    """
     return os.path.abspath(os.getcwd())
 
 
 def getScriptPath():
+    """
+    Get the agent/script path
+
+    Returns:
+        string of the path
+
+    @TODO: CHECK IF IT's USED
+    """
     return os.path.abspath(os.path.join(
         getCurrentWorkingDirectory(), "script"))
 
 
 def getPluginsPath():
+    """
+    Get the agent/plugins path
+
+    Returns:
+        string of the path
+
+    @TODO: CHECK IF IT's USED
+    """
     return os.path.abspath(os.path.join(
         getCurrentWorkingDirectory(), "plugins"))
 
 
 def getLibPath():
+    """
+    Get the agent/lib path
+
+    Returns:
+        string of the path
+
+    @TODO: CHECK IF IT's USED
+    """
     return os.path.abspath(os.path.join(getCurrentWorkingDirectory(), "lib"))
 
 
 def getPerlScriptPath(name):
+    """
+    Get the complete perl script path
+
+    Param:
+        name string of the file name
+
+    Returns:
+        string of the path
+
+    @TODO: CHECK IF IT'S USED
+    """
     return os.path.abspath(os.path.join(
         getCurrentWorkingDirectory(), "script", "perl", name))
 
 
 def showJSONData(jsondata):
+    """
+    Print formatted json datas with indents
+
+    Param:
+        jsondata dict representing the json datas
+    """
     pp = pprint.PrettyPrinter(indent=4)
     pp.pprint(jsondata)
 
@@ -527,11 +576,24 @@ class StreamToLogger(object):
     """
 
     def __init__(self, logger, debug=logging.INFO):
+        """
+        Initialize the StreamToLogger object.
+
+        Params:
+            - logging.getLogger object specialize which logger is used
+            - debug logging.LEVEL of displayed logs
+        """
         self.logger = logger
         self.debug = debug
         self.linebuf = ''
 
     def write(self, buf):
+        """
+        Write datas from buffer to the initialized logger.
+
+        Param:
+            buf string of datas
+        """
         for line in buf.rstrip().splitlines():
             self.logger.log(self.debug, line.rstrip())
 
@@ -539,6 +601,17 @@ class StreamToLogger(object):
 
 
 def get_connection_name_from_guid(iface_guids):
+    """
+    On Windows OS, get the inteface name stored in registry from its guid
+
+    Param:
+        iface_guids list of interface guids
+
+    Returns:
+        list of interface names
+
+    @TODO: CHECK IF IT'S USED
+    """
     iface_names = ['(unknown)' for i in range(len(iface_guids))]
     reg = wr.ConnectRegistry(None, wr.HKEY_LOCAL_MACHINE)
     reg_key = wr.OpenKey(
@@ -554,6 +627,12 @@ def get_connection_name_from_guid(iface_guids):
 
 
 def isWinUserAdmin():
+    """
+    On Windows OS, check if the current script is running with the admin user
+
+    Returns:
+        boolean true if user admin is used else false or 0
+    """
     if os.name == 'nt':
         import ctypes
         # WARNING: requires Windows XP SP2 or higher!
@@ -573,6 +652,12 @@ def isWinUserAdmin():
 
 
 def isMacOsUserAdmin():
+    """
+    On Mac OS , check if the current script is running with the admin user
+
+    Returns:
+        boolean true if user admin is used else false
+    """
     # pour linux "cat /etc/shadow")
     obj = simplecommand("cat /etc/master.passwd")
     if int(obj['code']) == 0:
@@ -582,6 +667,16 @@ def isMacOsUserAdmin():
 
 
 def getRandomName(nb, pref=""):
+    """
+    Generates a random name string composed exclusively of ASCII chars.
+
+    Params:
+        - nb int size of the random string
+        - pref string default "" prefixing the genarated string
+
+    Returns:
+        string containing the random name
+    """
     a = "abcdefghijklnmopqrstuvwxyz0123456789"
     d = pref
     for t in range(nb):
@@ -590,6 +685,15 @@ def getRandomName(nb, pref=""):
 
 
 def md5(fname):
+    """
+    Generates the md5 sum from content of the specified file.
+
+    Param:
+        fname string file's path
+
+    Returns:
+        string md5 generated
+    """
     hash = hashlib.md5()
     with open(fname, "rb") as f:
         for chunk in iter(lambda: f.read(4096), b""):
@@ -598,6 +702,15 @@ def md5(fname):
 
 
 def loadModule(filename):
+    """
+    Load python file as module.
+
+    Param:
+        filename string of the path's file
+
+    Returns:
+        python module
+    """
     if filename == '':
         raise RuntimeError, 'Empty filename cannot be loaded'
     searchPath, file = os.path.split(filename)
@@ -614,8 +727,16 @@ def loadModule(filename):
     return module
 
 def call_plugin(name, *args, **kwargs):
+    """
+    Load a python file as module and call the action function of this plugin
+
+    Params:
+        - name string of plugin name. The "plugin_" prefix is added to the file name.
+        - *args tuple of non referenced parameters
+        - **kwargs: dict of referenced parameters
+    """
     nameplugin = os.path.join(args[0].modulepath, "plugin_%s" % args[1])
-    # Add compteur appel plugins
+    # Add calling plugin counter
     count = 0
     try:
         count = getattr(args[0], "num_call%s" % args[1])
