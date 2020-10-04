@@ -758,6 +758,18 @@ def call_plugin(name, *args, **kwargs):
 
 
 def getshortenedmacaddress():
+    """
+    Get tge list of shortened mac addresses of the current machine.
+    ":", "-" or " " are removed from adresses.
+
+    Returns:
+        dict of macaddresses. For the address : c6:7e:f7:15:46:73 the dict shape is:
+        {
+            218248613545587 : 'c67ef7154673'
+        }
+        Where c67ef7154673 is the shortened mac address
+        and 218248613545587 is the shortened mac address convert as integer int('c67ef7154673', 16)
+    """
     listmacadress = {}
     for nbsearchmac in range(20):
         for i in netifaces.interfaces():
@@ -778,6 +790,12 @@ def getshortenedmacaddress():
 
 
 def getMacAdressList():
+    """
+    Get the non shortened mac addresses list. The 00:00:00:00:00:00 mac address is ignored.
+
+    Returns
+        list of mac addresses
+    """
     listmacadress = []
     for interfacenet in netifaces.interfaces():
         try:
@@ -791,6 +809,12 @@ def getMacAdressList():
 
 
 def getIPAdressList():
+    """
+    Get the machine's list of ip addresses. The local ip address is ignored
+
+    Returns:
+        list of ip addresses
+    """
     ip_list = []
     for interface in netifaces.interfaces():
         try:
@@ -824,6 +848,13 @@ def MacAdressToIp(ip):
 
 
 def name_jid():
+    """
+    Sort the shortened mac addresses and use the first of the list (the lowest) as name
+    for jid.
+
+    Returns
+        string of shortened mac address
+    """
     shortmacaddress = getshortenedmacaddress()
     sorted_macaddress = sorted(shortmacaddress.keys())
     return shortmacaddress[sorted_macaddress[0]]
@@ -847,7 +878,13 @@ def reduction_mac(mac):
 
 def is_valid_ipv4(ip):
     """
-        Validates IPv4 addresses.
+    Validates IPv4 addresses.
+
+    Params:
+        ip string of the tested ip
+
+    Returns:
+        boolean
     """
     pattern = re.compile(r"""
         ^
@@ -889,6 +926,12 @@ def is_valid_ipv4(ip):
 def is_valid_ipv6(ip):
     """
     Validates IPv6 addresses
+
+    Params:
+        ip string of the tested ip
+
+    Returns:
+        boolean
     """
     pattern = re.compile(r"""
         ^
