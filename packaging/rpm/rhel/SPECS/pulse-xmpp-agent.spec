@@ -44,6 +44,8 @@ Requires:       python-inotify
 Requires:       python-dateutil
 Requires:       python2-psutil
 Requires:       python-wakeonlan
+Requires:       python-crypto
+Requires:       python-cherrypy
 
 Obsoletes:     pulse-xmpp-agent < 2.0.7
 Provides:      pulse-xmpp-agent = %version
@@ -160,6 +162,7 @@ fi
 %package -n     pulse-xmpp-master-substitute
 Summary:        Pulse 2 common files
 Group:          System/Servers
+Requires:       python-enum34
 BuildArch:      noarch
 
 %description -n pulse-xmpp-master-substitute
@@ -420,7 +423,7 @@ chmod +x %buildroot%_var/lib/pulse2/clients/generate-agent-deps-package
 chmod +x %buildroot%_var/lib/pulse2/clients/generate-netcheck-package
 chmod +x %buildroot%_var/lib/pulse2/clients/generate-service-package
 #chmod +x %buildroot%_var/lib/pulse2/clients/win/generate-kiosk-package
-GIT_SSL_NO_VERIFY=true git clone https://github.com/pulse-project/pulse-filetree-generator.git
+GIT_SSL_NO_VERIFY=true git clone https://USER:PASSWORD@github.com/pulse-project/pulse-filetree-generator.git
 mv pulse-filetree-generator pulse-filetree-generator-%{filetree_version}
 g++ -O3 -std=c++11 pulse-filetree-generator-%{filetree_version}/linux_macos/pulse-filetree-generator.cpp -o pulse-filetree-generator
 mkdir -p %buildroot%_var/lib/pulse2/clients/lin/deb/pulse-agent-linux/usr/sbin

@@ -1026,36 +1026,44 @@ class XmppMasterDatabase(DatabaseHelper):
         return presence
 
     @DatabaseHelper._sessionm
-    def getMachinefrommacadress(self, session, macaddress):
-        """
-        information machine
-        """
-        machine = session.query(Machines).filter(Machines.macaddress.like(macaddress)).first()
+    def getMachinefrommacadress(self, session, macaddress, agenttype=None):
+        """ information machine"""
+        if agenttype is None:
+            machine = session.query(Machines).\
+                filter(Machines.macaddress.like(macaddress) ).first()
+        elif agenttype=="machine":
+            machine = session.query(Machines).\
+                filter(and_(Machines.macaddress.like(macaddress),
+                            Machines.agenttype.like("machine")) ).first()
+        elif agenttype=="relayserver":
+            machine = session.query(Machines).\
+                filter(and_(Machines.macaddress.like(macaddress),
+                            Machines.agenttype.like("relayserver")) ).first()    
         session.commit()
         session.flush()
         result = {}
         if machine:
-            result = {"id": machine.id,
-                      "jid": machine.jid,
-                      "platform": machine.platform,
-                      "archi": machine.archi,
-                      "hostname": machine.hostname,
-                      "uuid_inventorymachine": machine.uuid_inventorymachine,
-                      "ip_xmpp": machine.ip_xmpp,
-                      "ippublic": machine.ippublic,
-                      "macaddress": machine.macaddress,
-                      "subnetxmpp": machine.subnetxmpp,
-                      "agenttype": machine.agenttype,
-                      "classutil": machine.classutil,
-                      "groupdeploy": machine.groupdeploy,
-                      "urlguacamole": machine.urlguacamole,
-                      "picklekeypublic": machine.picklekeypublic,
-                      'ad_ou_user': machine.ad_ou_user,
-                      'ad_ou_machine': machine.ad_ou_machine,
-                      'kiosk_presence': machine.kiosk_presence,
-                      'lastuser': machine.lastuser,
-                      'keysyncthing': machine.keysyncthing,
-                      'enabled': machine.enabled}
+            result = {  "id" : machine.id,
+                        "jid" : machine.jid,
+                        "platform" : machine.platform,
+                        "archi" : machine.archi,
+                        "hostname" : machine.hostname,
+                        "uuid_inventorymachine" : machine.uuid_inventorymachine,
+                        "ip_xmpp" : machine.ip_xmpp,
+                        "ippublic" : machine.ippublic,
+                        "macaddress" : machine.macaddress,
+                        "subnetxmpp" : machine.subnetxmpp,
+                        "agenttype" : machine.agenttype,
+                        "classutil" : machine.classutil,
+                        "groupdeploy" : machine.groupdeploy,
+                        "urlguacamole" : machine.urlguacamole,
+                        "picklekeypublic" : machine.picklekeypublic,
+                        'ad_ou_user': machine.ad_ou_user,
+                        'ad_ou_machine': machine.ad_ou_machine,
+                        'kiosk_presence': machine.kiosk_presence,
+                        'lastuser': machine.lastuser,
+                        'keysyncthing' : machine.keysyncthing,
+                        'enabled' : machine.enabled}
         return result
 
     @DatabaseHelper._sessionm
@@ -1082,7 +1090,8 @@ class XmppMasterDatabase(DatabaseHelper):
                            keysyncthing=""):
         msg ="Create Machine"
         pe=-1
-        machineforupdate = self.getMachinefrommacadress(macaddress)
+        machineforupdate = self.getMachinefrommacadress(macaddress,
+                                                        agenttype=agenttype)
         if len(machineforupdate) > 0:
             pe = machineforupdate['id']
         if pe != -1:
@@ -2810,7 +2819,7 @@ class XmppMasterDatabase(DatabaseHelper):
 
     @DatabaseHelper._sessionm
     def addPresenceNetwork(self, session, macaddress, ipaddress, broadcast, gateway, mask, mac, id_machine):
-        self.delNetwork_for_machines_id(id_machine)
+        #self.delNetwork_for_machines_id(id_machine)
         try:
             new_network = Network()
             new_network.macaddress=macaddress
@@ -4600,13 +4609,15 @@ class XmppMasterDatabase(DatabaseHelper):
         return result
 
     @DatabaseHelper._sessionm
-    def getGuacamoleRelayServerMachineHostname(self, session, hostname, enable=1):
+    def getGuacamoleRelayServerMachineHostname(self, session, hostname,
+                                               enable=1, agenttype="machine"):
         querymachine = session.query(Machines)
         if enable is None:
             querymachine = querymachine.filter(Machines.hostname == hostname)
         else:
             querymachine = querymachine.filter(and_(Machines.hostname == hostname,
-                                                    Machines.enabled == enable))
+                                                    Machines.enabled == enable,
+                                                    Machines.agenttype == agenttype))
         machine = querymachine.one()
         session.commit()
         session.flush()
@@ -5659,7 +5670,8 @@ class XmppMasterDatabase(DatabaseHelper):
                                        mon_machine_id,
                                        id_device_reg,
                                        doc,
-                                       status_event=1)
+                                       status_event=1, 
+                                       hostname=hostname)
             else:
                 # Check if there is a general rule for this device
                 objectlist_local_rule = self._rule_monitoring(hostname,
@@ -5676,7 +5688,8 @@ class XmppMasterDatabase(DatabaseHelper):
                                            mon_machine_id,
                                            id_device_reg,
                                            doc,
-                                           status_event=1)
+                                           status_event=1, 
+                                            hostname=hostname)
             logging.getLogger().debug("==================================")
             return id_device_reg
         except Exception as e:
@@ -5713,7 +5726,8 @@ class XmppMasterDatabase(DatabaseHelper):
                           id_machine,
                           id_device,
                           doc,
-                          status_event=1):
+                          status_event=1, 
+                          hostname=None):
 
         if objectlist_local_rule:
             # apply binding to find out if an alert or event is defined
@@ -5745,13 +5759,41 @@ class XmppMasterDatabase(DatabaseHelper):
                 #logging.getLogger().debug("bindingcmd %s"%bindingcmd)
                 #logging.getLogger().debug("z['type_event'] %s"%z['type_event'])
                 #logging.getLogger().debug("status_event %s"%status_event)
+                if hostname is not None:
+                    self.remise_status_event(z['id'], 
+                                             0,
+                                             hostname)
                 self.setMonitoring_event(id_machine,
                                          id_device,
                                          z['id'],
                                          bindingcmd,
                                          type_event=z['type_event'],
                                          status_event=1)
-
+    @DatabaseHelper._sessionm
+    def remise_status_event(self,
+                            session,
+                            id_rule, 
+                            status_event,
+                            hostname):
+        try:
+            sql="""UPDATE `xmppmaster`.`mon_event`
+                        JOIN
+                    xmppmaster.mon_machine ON xmppmaster.mon_machine.id = xmppmaster.mon_event.machines_id 
+                SET 
+                    `xmppmaster`.`mon_event`.`status_event` = '%s'
+                WHERE
+                        xmppmaster.mon_machine.hostname LIKE '%s'
+                    AND 
+                        xmppmaster.mon_event.id_rule = %s;""" % (status_event,
+                                                                 hostname,
+                                                                 id_rule)
+                        
+            result = session.execute(sql)
+            session.commit()
+            session.flush()
+        except Exception as e:
+            logging.getLogger().error(str(e))
+            return -1
 
 
     def __binding_application(self, datastring, bindingstring, device_type):
