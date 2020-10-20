@@ -994,6 +994,16 @@ def typelinux():
 
 
 def isprogramme(name):
+    """
+    Get the absolute path of the specified program, then try to execute it.
+    If the execution is successfull : it is a program
+
+    Param:
+        name string of the name of the tested program
+
+    Returns:
+        boolean
+    """
     obj = {}
     p = subprocess.Popen("which %s" % (name),
                          shell=True,
@@ -1009,6 +1019,19 @@ def isprogramme(name):
 
 
 def simplecommand(cmd):
+    """
+    Execute the command and return its result
+
+    Param:
+        cmd string of the executed command
+
+    Returns:
+        dict of the result and code.
+        {
+            "code": int command execution code,
+            "result": list of string of the command result
+        }
+    """
     obj = {}
     p = subprocess.Popen(cmd,
                          shell=True,
@@ -1021,6 +1044,20 @@ def simplecommand(cmd):
 
 
 def simplecommandstr(cmd):
+    """
+    Execute the command and return its result
+
+    Param:
+        cmd string of the executed command
+
+    Returns:
+        dict of the result and code.
+        {
+            "code": int command execution code,
+            "result": string of the command result (instead of list of string for
+                simplecommand function)
+        }
+    """
     obj = {}
     p = subprocess.Popen(cmd,
                          shell=True,
