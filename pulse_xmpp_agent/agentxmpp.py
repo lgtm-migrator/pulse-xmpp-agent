@@ -194,7 +194,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         laps_time_action_extern = 60
         laps_time_handlemanagesession = 20
         laps_time_check_established_connection = 900
-        logging.warning("check connexion xmpp %ss" % laps_time_check_established_connection)
+        logging.debug("The xmpp connexion is checked every %ss" % laps_time_check_established_connection)
         self.back_to_deploy = {}
         self.config = conf
         # _____________ verify network interface _____________
@@ -204,9 +204,9 @@ class MUCBot(sleekxmpp.ClientXMPP):
                                                    "lib",
                                                    "INFOSTMP",
                                                    'fingerprintnetwork')
-        logging.debug("filename: %s" % filetempinfolibfingerprint)
+        logging.debug("The path to the fingerprint file is: %s" % filetempinfolibfingerprint)
         if os.path.exists(filetempinfolibfingerprint):
-            logging.debug("actuel fingerprint file %s" % file_get_contents(filetempinfolibfingerprint))
+            logging.debug("The fingerprint is %s" % file_get_contents(filetempinfolibfingerprint))
             # comparaison
             if netfingerprintstart != file_get_contents(filetempinfolibfingerprint):
                 logging.warning("after start : registration must update the information in the xmpp tables.")
@@ -243,8 +243,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.img_agent = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                       "img_agent")
         if os.path.isdir(self.img_agent):
-            logging.warning('deleting directory %s' % self.img_agent)
             try:
+                logging.debug('Deleting the directory %s' % self.img_agent)
                 shutil.rmtree(self.img_agent)
             except Exception as e:
                 logging.error('Cannot delete the directory %s : %s' % (self.img_agent, str(e)))
@@ -285,7 +285,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
             self.levelcharge = {}
             self.levelcharge['machinelist'] = []
             self.levelcharge['charge'] = 0
-            # supprime les reverses ssh inutile
+            # We remove the useless reversessh
             self.manage_persistence_reverse_ssh = reverse_port_ssh()
         self.jidclusterlistrelayservers = {}
         self.machinerelayserver = []
@@ -297,10 +297,12 @@ class MUCBot(sleekxmpp.ClientXMPP):
             # We remove the fingerprint file
             pathfingerprint = os.path.join( Setdirectorytempinfo(),
                                             'fingerprintconf')
-            logger.error("configuration error del figerprint %s"%pathfingerprint)
             if os.path.isfile(pathfingerprint):
-                os.remove(pathfingerprint)
-                logger.error("configuration error del figerprint %s"%pathfingerprint)
+                try:
+                    os.remove(pathfingerprint)
+                except Exception:
+                    # FIXME: Add a less generic exception
+                    logger.error("configuration error del figerprint %s" % pathfingerprint)
         self.agentsiveo = self.config.jidagentsiveo
 
         self.agentmaster = jid.JID("master@pulse")
@@ -496,8 +498,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
         if self.config.inventory_interval != 0:
             if self.config.inventory_interval < 3600:
                 self.config.inventory_interval = 3600
-                logging.warning("chang minimun time cyclic inventory : 3600")
-                logging.warning("we make sure that the time for "\
+                logging.debug("chang minimun time cyclic inventory : 3600")
+                logging.debug("we make sure that the time for "\
                     " the inventories is greater than or equal to 1 hour.")
             if self.config.event_inventory:
                 self.schedule('event inventory',
@@ -505,9 +507,8 @@ class MUCBot(sleekxmpp.ClientXMPP):
                             self.handleinventory,
                             repeat=True)
         else:
-            logging.warning("not enable cyclic inventory")
+            logging.debug("The cyclic inventory is disabled")
 
-        #self.schedule('queueinfo', 10 , self.queueinfo, repeat=True)
         if self.config.agenttype not in ['relayserver']:
             if self.config.session_reload:
                 self.schedule('session reload',
@@ -541,7 +542,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
         self.add_event_handler('changed_subscription', self.changed_subscription)
 
         self.RSA = MsgsignedRSA(self.config.agenttype)
-        logger.info("VERSION AGENT IS %s"%self.version_agent())
+        logger.info("The version of the agent is %s" % self.version_agent())
         #### manage information extern for Agent RS(relayserver only dont working on windows.)
         ##################
         if  self.config.agenttype in ['relayserver']:
@@ -660,7 +661,7 @@ class MUCBot(sleekxmpp.ClientXMPP):
                             introducer = False,
                             autoAcceptFolders=False,
                             address = ["dynamic"]):
-        # test si device existe
+        # We check if the device exists
         for device in config['devices']:
             if device['deviceID'] == keydevicesyncthing:
                 result = False
