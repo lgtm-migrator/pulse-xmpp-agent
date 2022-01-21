@@ -536,6 +536,7 @@ class XmppMasterDatabase(DatabaseHelper):
             Call the mmc_restart_blocked_deployments stored procedure
             It plans with blocked deployments again
         """
+        self.restart_blocked_deployments_on_status_transfert_failed(nb_reload)
         connection = self.engine_xmppmmaster_base.raw_connection()
         results = None
         try:
@@ -546,10 +547,31 @@ class XmppMasterDatabase(DatabaseHelper):
             connection.commit()
         finally:
             connection.close()
-
-        results = "%s" % results[0]
-        if int(results) != 0:
+        if results:
+            results = "%s" % results[0]
             self.logger.info("Calling the mmc_restart_deploy_sessionid stored procedure with %s" % nb_reload)
+            self.logger.info("Restarting %s deployements" % results)
+        return results
+
+
+    def restart_blocked_deployments_on_status_transfert_failed(self, nb_reload=50):
+        """
+            Call the mmc_restart_blocked_deployments_transfert_error stored procedure
+            It plans with transfert failed blocked deployments again
+        """
+        connection = self.engine_xmppmmaster_base.raw_connection()
+        results = None
+        try:
+            cursor = connection.cursor()
+            cursor.callproc("mmc_restart_blocked_deployments_transfert_error", [nb_reload])
+            results = list(cursor.fetchall())
+            cursor.close()
+            connection.commit()
+        finally:
+            connection.close()
+        if results:
+            results = "%s" % results[0]
+            self.logger.info("Calling the mmc_restart_blocked_deployments_transfert_error stored procedure with %s" % nb_reload)
             self.logger.info("Restarting %s deployements" % results)
         return results
 
