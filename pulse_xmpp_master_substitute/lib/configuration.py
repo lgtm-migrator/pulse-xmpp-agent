@@ -117,12 +117,12 @@ class confParameter:
         # GLOBAL CONFIGURATION
         self.levellog = 20
         if Config.has_option("global", "log_level"):
-            self.levellog = self._levellogdata(Config.get("global", "log_level"))
-        self.log_level_sleekxmpp = 50
-        if Config.has_option("global", "log_level_sleekxmpp"):
-            self.log_level_sleekxmpp = self._levellogdata(
-                Config.get("global", "log_level_sleekxmpp")
-            )
+            self.levellog =  self._levellogdata(Config.get('global', 'log_level'))
+
+        self.log_level_slixmpp = 50
+        if Config.has_option("global", "log_level_slixmpp"):
+            self.log_level_slixmpp =  self._levellogdata(Config.get('global',
+                                                                          'log_level_slixmpp'))
 
         self.logfile = "/var/log/mmc/master_inv.log"
         if Config.has_option("global", "logfile"):
