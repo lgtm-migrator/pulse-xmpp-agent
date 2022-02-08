@@ -33,7 +33,6 @@ else:
     from sleekxmpp import jid
 import netifaces
 import json
-import sys
 import platform
 import os
 import logging
