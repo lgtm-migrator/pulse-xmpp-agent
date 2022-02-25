@@ -26,8 +26,9 @@ from distutils.version import StrictVersion
 import logging
 import tempfile
 import os
+import socket
 
-URBACKUP_VERSION = '2.4.15'
+URBACKUP_VERSION = '2.4.11'
 
 logger = logging.getLogger()
 
@@ -46,6 +47,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
                 installed_version = checkurbackupversion()
                 if StrictVersion(installed_version) < StrictVersion(URBACKUP_VERSION):
                     updatebackupclient(xmppobject)
+                    backupclientsettings(xmppobject)
     except Exception:
         pass
 
@@ -70,7 +72,7 @@ def updatebackupclient(xmppobject):
     install_tempdir = tempfile.mkdtemp(dir=windows_tempdir)
 
     if sys.platform.startswith('win'):
-        filename = 'UrBackupClient-%s.exe' % URBACKUP_VERSION
+        filename = 'UrBackup Client %s.exe' % URBACKUP_VERSION
         dl_url = 'http://%s/downloads/win/downloads/%s' % (
             xmppobject.config.Server, filename)
         logger.debug("Downloading %s" % dl_url)
@@ -81,6 +83,7 @@ def updatebackupclient(xmppobject):
             current_dir = os.getcwd()
             os.chdir(install_tempdir)
             install_options = "/S"
+
 
             # Run installer
             cmd = '%s %s' % (filename, install_options)
@@ -94,3 +97,18 @@ def updatebackupclient(xmppobject):
             # Download error
             logger.error("%s" % txtmsg)
 
+def backupclientsettings(xmppobject):
+    logger.info("Configuring UrBackup client settings")
+
+    hostname = socket.gethostname()
+    urbackup_dir = os.path.join("c:\\", "Program Files", "UrBackup")
+
+    if sys.platform.startswith('win'):
+        filename = os.path.join('%s' % urbackup_dir, 'UrBackupClient_cmd.exe')
+        cmd = '"%s" set-settings -k  internet_mode_enabled -v true -k internet_server -v %s -k internet_server_port -v %s -k internet_authkey -v %s -k computername -v %s -k internet_image_backups -v true -k internet_full_file_backups -v true' 
+            % (filename, xmppobject.config.backup_server, xmppobject.config.backup_port, xmppobject.config.authkey, hostname)
+        cmd_result = utils.simplecommand(cmd)
+        if cmd_result['code'] == 0:
+            logger.info("Settings successfully applied to client %s" % (hostname))
+        else:
+            logger.error("Error applying settings: %s" % (filename, cmd_result['result']))
