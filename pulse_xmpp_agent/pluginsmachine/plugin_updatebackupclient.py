@@ -105,8 +105,7 @@ def backupclientsettings(xmppobject):
 
     if sys.platform.startswith('win'):
         filename = os.path.join('%s' % urbackup_dir, 'UrBackupClient_cmd.exe')
-        cmd = '"%s" set-settings -k  internet_mode_enabled -v true -k internet_server -v %s -k internet_server_port -v %s -k internet_authkey -v %s -k computername -v %s -k internet_image_backups -v true -k internet_full_file_backups -v true' 
-            % (filename, xmppobject.config.backup_server, xmppobject.config.backup_port, xmppobject.config.authkey, hostname)
+        cmd = '"%s" set-settings -k  internet_mode_enabled -v true -k internet_server -v %s -k internet_server_port -v %s -k internet_authkey -v %s -k computername -v %s -k internet_image_backups -v true -k internet_full_file_backups -v true' % (filename, xmppobject.config.backup_server, xmppobject.config.backup_port, xmppobject.config.authkey, hostname)
         cmd_result = utils.simplecommand(cmd)
         if cmd_result['code'] == 0:
             logger.info("Settings successfully applied to client %s" % (hostname))
