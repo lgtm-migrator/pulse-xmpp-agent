@@ -30,7 +30,7 @@ if sys.version_info[0] == 3:
     from configparser import ConfigParser
     import binascii
 else:
-    from ConfigParser import ConfigParser
+    from configparser import ConfigParser
     import urllib2
     import urllib
 
@@ -1679,7 +1679,7 @@ def loadjsonfile(filename):
 def save_user_current(name=None):
     loginuser = os.path.join(Setdirectorytempinfo(), "loginuser")
     if name is None:
-        userlist = list(set([users[0] for users in psutil.users()]))
+        userlist = list({users[0] for users in psutil.users()})
         if len(userlist) > 0:
             name = userlist[0]
     else:
