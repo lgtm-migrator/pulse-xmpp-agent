@@ -73,8 +73,9 @@ def createDaemon(optsconsoledebug, optsdeamon, optfileconf):
         logging.error("\n%s"%(traceback.format_exc()))
         os._exit(1)
 
-def doTask( optsconsoledebug, optsdeamon, optfileconf):
-    tg = confParameter( optfileconf )
+
+def doTask(optsconsoledebug, optsdeamon, optfileconf):
+    tg = confParameter(optfileconf)
     logdir = os.path.dirname(tg.logfile)
     if not os.path.exists(logdir):
         os.makedirs(logdir)
@@ -88,15 +89,13 @@ def doTask( optsconsoledebug, optsdeamon, optfileconf):
         if optsconsoledebug :
             logging.basicConfig(level = logging.DEBUG, format=format)
         else:
-            logging.basicConfig( level = tg.levellog,
-                                 format = format,
-                                 filename = tg.logfile,
-                                 filemode = 'a+')
+            logging.basicConfig(
+                level=tg.levellog, format=format, filename=tg.logfile, filemode="a+"
+            )
     else:
-        logging.basicConfig( level = tg.levellog,
-                             format = format,
-                             filename = tg.logfile,
-                             filemode = 'a+')
+        logging.basicConfig(
+            level=tg.levellog, format=format, filename=tg.logfile, filemode="a+"
+        )
 
     # Setup the command line arguments.
     tg = confParameter( optfileconf )
@@ -140,22 +139,23 @@ def doTask( optsconsoledebug, optsdeamon, optfileconf):
 
     xmpp = MUCBot(optfileconf)
     xmpp.shutdown = False
-    
-    xmpp.register_plugin('xep_0030') # Service Discovery
-    xmpp.register_plugin('xep_0045') # M
-    xmpp.register_plugin('xep_0060') # PubSubulti-User Chat
-    xmpp.register_plugin('xep_0004') # Data Forms
-    xmpp.register_plugin('xep_0050') # Adhoc Commands
-    xmpp.register_plugin('xep_0199', {'keepalive': True,
-                                      'frequency': 600,
-                                      'interval': 600,
-                                      'timeout'  : 500  })
-    xmpp.register_plugin('xep_0077') # In-band Registration
-    xmpp['xep_0077'].force_registration = True
+
+    xmpp.register_plugin("xep_0030")  # Service Discovery
+    xmpp.register_plugin("xep_0045")  # M
+    xmpp.register_plugin("xep_0060")  # PubSubulti-User Chat
+    xmpp.register_plugin("xep_0004")  # Data Forms
+    xmpp.register_plugin("xep_0050")  # Adhoc Commands
+    xmpp.register_plugin(
+        "xep_0199",
+        {"keepalive": True, "frequency": 600, "interval": 600, "timeout": 500},
+    )
+    xmpp.register_plugin("xep_0077")  # In-band Registration
+    xmpp["xep_0077"].force_registration = True
     xmpp.Mode_Marche_Arret_loop()
 
-if __name__ == '__main__':
-    if sys.platform.startswith('linux') and  os.getuid() != 0:
+
+if __name__ == "__main__":
+    if sys.platform.startswith("linux") and os.getuid() != 0:
         print("Agent must be running as root")
         sys.exit(0)
     #controle si les key de master sont installer

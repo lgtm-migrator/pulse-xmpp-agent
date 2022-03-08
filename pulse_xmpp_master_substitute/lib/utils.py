@@ -345,17 +345,17 @@ def file_get_contents(filename,
 
 
 def file_get_binarycontents(filename, offset=-1, maxlen=-1):
-        fp = open(filename, 'rb')
-        try:
-            if offset > 0:
-                fp.seek(offset)
-            ret = fp.read(maxlen)
-            return ret
-        finally:
-            fp.close()
+    fp = open(filename, 'rb')
+    try:
+        if offset > 0:
+            fp.seek(offset)
+        ret = fp.read(maxlen)
+        return ret
+    finally:
+        fp.close()
 
 def file_put_contents(filename, data):
-    f = open(filename, 'w')
+    f = open(filename, "w")
     f.write(data)
     f.close()
 
@@ -535,6 +535,19 @@ def call_plugin(name, *args, **kwargs):
         setattr(args[0], "num_call%s" % args[1], count)
     pluginaction = loadModule(name)
     loop.call_soon_threadsafe(pluginaction.action, *args, **kwargs)
+
+
+def call_plugin_sequentially(name, *args, **kwargs):
+    # add compteur appel plugins
+    count = 0
+    try:
+        count = getattr(args[0], "num_call%s" % args[1])
+        setattr(args[0], "num_call%s" % args[1], count + 1)
+    except AttributeError:
+        count = 0
+        setattr(args[0], "num_call%s" % args[1], count)
+    pluginaction = loadModule(name)
+    pluginaction.action(*args, **kwargs)
 
 def call_plugin_sequentially(name, *args, **kwargs):
     # add compteur appel plugins
@@ -1448,7 +1461,7 @@ def loadjsonfile(filename):
 def save_user_current(name=None):
     loginuser = os.path.join(Setdirectorytempinfo(), 'loginuser')
     if name is None:
-        userlist = list(set([users[0]  for users in psutil.users()]))
+        userlist = list(set([users[0] for users in psutil.users()]))
         if len(userlist) > 0:
             name = userlist[0]
     else:
@@ -1550,7 +1563,8 @@ def add_method(cls):
             return func(*args, **kwargs)
         setattr(cls, func.__name__, wrapper)
         # Note we are not binding func, but wrapper which accepts self but does exactly the same as func
-        return func # returning func means func can still be used normally
+        return func  # returning func means func can still be used normally
+
     return decorator
 
 def is_findHostfromHostname(hostname):
@@ -1582,7 +1596,9 @@ def is_connectedServer(ip, port):
         sock.close()
 
 
-unpad = lambda s : s[0:-ord(s[-1])]
+unpad = lambda s: s[0 : -ord(s[-1])]
+
+
 class AESCipher:
 
     def __init__(self, key, BS=32):
@@ -1967,11 +1983,13 @@ def pulseuser_profile_mustexist(username='pulseuser'):
 def get_user_profile(username='pulseuser'):
     usersid = get_user_sid(username)
     if not usersid:
-        return ''
-    check_profile_cmd = 'powershell "Get-ItemProperty '\
-    '-Path \'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList\*\' '\
-    '| Where-Object { $_.PSChildName -eq \'%s\' } '\
-    '| Select -ExpandProperty ProfileImagePath"' % usersid
+        return ""
+    check_profile_cmd = (
+        'powershell "Get-ItemProperty '
+        "-Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList\*' "
+        "| Where-Object { $_.PSChildName -eq '%s' } "
+        '| Select -ExpandProperty ProfileImagePath"' % usersid
+    )
     result = simplecommand(encode_strconsole(check_profile_cmd))
     if result['code'] == 0 and result['result']:
         return result['result'][0]

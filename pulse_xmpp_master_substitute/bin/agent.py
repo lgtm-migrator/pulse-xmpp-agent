@@ -33,7 +33,13 @@ import slixmpp
 from slixmpp.exceptions import IqError, IqTimeout
 from slixmpp.xmlstream.stanzabase import ET
 from lib.configuration import confParameter
-from lib.utils import DEBUGPULSE, getRandomName, call_plugin, call_plugin_sequentially, ipfromdns
+from lib.utils import (
+    DEBUGPULSE,
+    getRandomName,
+    call_plugin,
+    call_plugin_sequentially,
+    ipfromdns,
+)
 import traceback
 import signal
 from lib.plugins.xmpp import XmppMasterDatabase
@@ -47,8 +53,9 @@ logger = logging.getLogger()
 
 raw_input = input
 
-def getComputerByMac( mac):
-    ret = Glpi().getMachineByMacAddress('imaging_module', mac)
+
+def getComputerByMac(mac):
+    ret = Glpi().getMachineByMacAddress("imaging_module", mac)
     if type(ret) == list:
         if len(ret) != 0:
             return ret[0]
@@ -56,21 +63,36 @@ def getComputerByMac( mac):
             return None
     return ret
 
+
 #### faire singeton
 class MUCBot(slixmpp.ClientXMPP):
-    def __init__(self, conf_file):#jid, password, room, nick):
+    def __init__(self, conf_file):  # jid, password, room, nick):
         self.fileconf = conf_file
-        self.modulepath = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..', "pluginsmastersubstitute"))
+        self.modulepath = os.path.abspath(
+            os.path.join(
+                os.path.dirname(os.path.realpath(__file__)),
+                "..",
+                "pluginsmastersubstitute",
+            )
+        )
         signal.signal(signal.SIGINT, self.signal_handler)
         self.config = confParameter(conf_file)
 
         ### update level log for slixmpp
-        handler_slixmpp = logging.getLogger('slixmpp')
-        logging.log(DEBUGPULSE,"slixmpp log level is %s" %self.config.log_level_slixmpp)
+        handler_slixmpp = logging.getLogger("slixmpp")
+        logging.log(
+            DEBUGPULSE, "slixmpp log level is %s" % self.config.log_level_slixmpp
+        )
         handler_slixmpp.setLevel(self.config.log_level_slixmpp)
 
-        logging.log(DEBUGPULSE,"Starting Master sub (%s)" %(self.config.jidmastersubstitute))
-        slixmpp.ClientXMPP.__init__(self, jid.JID(self.config.jidmastersubstitute), self.config.passwordconnection)
+        logging.log(
+            DEBUGPULSE, "Starting Master sub (%s)" % (self.config.jidmastersubstitute)
+        )
+        slixmpp.ClientXMPP.__init__(
+            self,
+            jid.JID(self.config.jidmastersubstitute),
+            self.config.passwordconnection,
+        )
         # We define the type of the Agent
         self.config.agenttype = 'substitute'
         self.manage_scheduler = manage_scheduler(self)
@@ -80,28 +102,28 @@ class MUCBot(slixmpp.ClientXMPP):
                             repeat=True)
         logger.debug("##############################################")
 
-
         ####################Update agent from MAster#############################
-        #self.pathagent = os.path.join(os.path.dirname(os.path.realpath(__file__)))
-        #self.img_agent = os.path.join(os.path.dirname(os.path.realpath(__file__)), "img_agent")
-        #self.Update_Remote_Agentlist = Update_Remote_Agent(self.pathagent, True )
-        #self.descriptorimage = Update_Remote_Agent(self.img_agent)
+        # self.pathagent = os.path.join(os.path.dirname(os.path.realpath(__file__)))
+        # self.img_agent = os.path.join(os.path.dirname(os.path.realpath(__file__)), "img_agent")
+        # self.Update_Remote_Agentlist = Update_Remote_Agent(self.pathagent, True )
+        # self.descriptorimage = Update_Remote_Agent(self.img_agent)
         ###################END Update agent from MAster#############################
         self.agentmaster = jid.JID(self.config.jidmaster)
-        #self.schedule('queueinfo', 10 , self.queueinfo, repeat=True)
+        # self.schedule('queueinfo', 10 , self.queueinfo, repeat=True)
         # _____________ Getion connection agent _______________________
         self.add_event_handler("register", self.register)
         self.add_event_handler("connecting", self.handle_connecting)
         self.add_event_handler("connection_failed", self.handle_connection_failed)
-        self.add_event_handler('disconnected', self.handle_disconnected)
+        self.add_event_handler("disconnected", self.handle_disconnected)
         # _____________ Getion connection agent _______________________
         self.add_event_handler("session_start", self.start)
-        self.add_event_handler('message', self.message)
+        self.add_event_handler("message", self.message)
         # self.add_event_handler("signalsessioneventrestart", self.signalsessioneventrestart)
         # self.add_event_handler("loginfotomaster", self.loginfotomaster)
         # self.add_event_handler('changed_status', self.changed_status)
-        self.add_event_handler("restartmachineasynchrone",
-                               self.restartmachineasynchrone)
+        self.add_event_handler(
+            "restartmachineasynchrone", self.restartmachineasynchrone
+        )
 
         # self.register_handler(handler.Callback(
         # 'CustomXEP Handler',
@@ -112,8 +134,7 @@ class MUCBot(slixmpp.ClientXMPP):
     # ----------------------- Getion connection agent -----------------------
     # -----------------------------------------------------------------------
 
-    def Mode_Marche_Arret_loop(self, nb_reconnect=None,
-                               forever=False, timeout=None):
+    def Mode_Marche_Arret_loop(self, nb_reconnect=None, forever=False, timeout=None):
         """
         Connect to the XMPP server and start processing XMPP stanzas.
         """
@@ -127,11 +148,10 @@ class MUCBot(slixmpp.ClientXMPP):
             self.disconnect(wait=1)
             logger.debug("reconnect Mode_Marche_Arret_loop")
             self.config = confParameter(self.fileconf)
-            self.address = (ipfromdns(self.config.Server),
-                            int(self.config.Port))
+            self.address = (ipfromdns(self.config.Server), int(self.config.Port))
             logger.debug("try connection (%s) %s " % (self.startdata, self.address))
-            logger.debug("forever (%s) %s " % (forever,timeout))
-            self.Mode_Marche_Arret_connect(forever=forever, timeout=timeout )
+            logger.debug("forever (%s) %s " % (forever, timeout))
+            self.Mode_Marche_Arret_connect(forever=forever, timeout=timeout)
             if nb_reconnect:
                 self.startdata = self.startdata - 1
 
@@ -155,7 +175,6 @@ class MUCBot(slixmpp.ClientXMPP):
         self.connect_loop_wait = -1
         self.disconnect(wait=time_stop)
 
-
     def handle_connecting(self, data):
         """
         success connecting agent
@@ -172,7 +191,7 @@ class MUCBot(slixmpp.ClientXMPP):
         print("\nCONNECTION FAILED %s" % self.connect_loop_wait)
         self.connect_loop_wait = 5
         self.Mode_Marche_Arret_stop_agent(time_stop=1)
-        #self.disconnect(wait=5)
+        # self.disconnect(wait=5)
 
     def handle_disconnected(self, data):
         print("handle_disconnected %s\n" % self.connect_loop_wait)
@@ -182,44 +201,44 @@ class MUCBot(slixmpp.ClientXMPP):
     def register(self, iq):
         logging.info("register user %s" % self.boundjid)
         resp = self.Iq()
-        resp['type'] = 'set'
-        resp['register']['username'] = self.boundjid.user
-        resp['register']['password'] = self.password
+        resp["type"] = "set"
+        resp["register"]["username"] = self.boundjid.user
+        resp["register"]["password"] = self.password
         try:
             resp.send()
             logging.info("Account created for %s!" % self.boundjid)
         except IqError as e:
-            logging.error("Could not register account: %s" %
-                    e.iq['error']['text'])
+            logging.error("Could not register account: %s" % e.iq["error"]["text"])
             self.disconnect()
 
         except IqTimeout as e:
             logging.error("No response from server.")
             self.disconnect()
-    #async def register(self, iq):
-        #logging.info("register user %s" % self.boundjid)
-        #resp = self.Iq()
-        #resp['type'] = 'set'
-        #resp['register']['username'] = self.boundjid.user
-        #resp['register']['password'] = self.password
-        #try:
-            #task = asyncio.ensure_future(resp.send())
-            #await task
-            #logging.info("Account created for %s!" % self.boundjid)
-        #except IqError as e:
-            #logging.info("Account created for")
-            #if e.iq["error"]["code"] == "409":
-                #logging.warning(
-                    #"Could not register account %s : User already exists"
-                    #% resp["register"]["username"])
-            #else:
-                #logging.error(
-                    #"Could not register account %s : %s"
-                    #% (resp["register"]["username"], e.iq["error"]["text"]))
-            ##self.disconnect()
-        #except IqTimeout as e:
-            #logging.error("No response from server.")
-            #self.Mode_Marche_Arret_stop_agent(time_stop=1)
+
+    # async def register(self, iq):
+    # logging.info("register user %s" % self.boundjid)
+    # resp = self.Iq()
+    # resp['type'] = 'set'
+    # resp['register']['username'] = self.boundjid.user
+    # resp['register']['password'] = self.password
+    # try:
+    # task = asyncio.ensure_future(resp.send())
+    # await task
+    # logging.info("Account created for %s!" % self.boundjid)
+    # except IqError as e:
+    # logging.info("Account created for")
+    # if e.iq["error"]["code"] == "409":
+    # logging.warning(
+    # "Could not register account %s : User already exists"
+    #% resp["register"]["username"])
+    # else:
+    # logging.error(
+    # "Could not register account %s : %s"
+    #% (resp["register"]["username"], e.iq["error"]["text"]))
+    ##self.disconnect()
+    # except IqTimeout as e:
+    # logging.error("No response from server.")
+    # self.Mode_Marche_Arret_stop_agent(time_stop=1)
 
     # -----------------------------------------------------------------------
     # --------------------- END Getion connection agent ---------------------
@@ -312,11 +331,10 @@ class MUCBot(slixmpp.ClientXMPP):
     # ---------------------- END analyse strophe xmpp -----------------------
     # -----------------------------------------------------------------------
 
-
-    def send_message_to_master(self , msg):
-        self.send_message(  mbody = json.dumps(msg),
-                            mto = '%s/MASTER'%self.agentmaster,
-                            mtype ='chat')
+    def send_message_to_master(self, msg):
+        self.send_message(
+            mbody=json.dumps(msg), mto="%s/MASTER" % self.agentmaster, mtype="chat"
+        )
 
     # def changed_status(self, message):
     # print "%s %s"%(message['from'], message['type'])
@@ -328,23 +346,25 @@ class MUCBot(slixmpp.ClientXMPP):
         self.shutdown = False
         self.send_presence()
         await self.get_roster()
-        logging.log(DEBUGPULSE,"subscribe xmppmaster")
-        self.send_presence ( pto = self.agentmaster , ptype = 'subscribe' )
+        logging.log(DEBUGPULSE, "subscribe xmppmaster")
+        self.send_presence(pto=self.agentmaster, ptype="subscribe")
 
-        self.xmpplog("Starting substitute agent",
-                    type = 'info',
-                    sessionname = "",
-                    priority = -1,
-                    action = "xmpplog",
-                    who = self.boundjid.bare,
-                    how = "",
-                    why = "",
-                    date = None ,
-                    fromuser = self.boundjid.bare,
-                    touser = "")
+        self.xmpplog(
+            "Starting substitute agent",
+            type="info",
+            sessionname="",
+            priority=-1,
+            action="xmpplog",
+            who=self.boundjid.bare,
+            how="",
+            why="",
+            date=None,
+            fromuser=self.boundjid.bare,
+            touser="",
+        )
 
-        #call plugin start
-        startparameter={
+        # call plugin start
+        startparameter = {
             "action": "start",
             "sessionid" : getRandomName(6, "start"),
             "ret" : 0,
@@ -380,9 +400,9 @@ class MUCBot(slixmpp.ClientXMPP):
                     }
         self.send_message_to_master(msgevt)
         self.shutdown = True
-        logging.log(DEBUGPULSE,"shutdown xmpp agent %s!" % self.boundjid.user)
+        logging.log(DEBUGPULSE, "shutdown xmpp agent %s!" % self.boundjid.user)
         self.Mode_Marche_Arret_stop_agent(time_stop=1)
-        #self.disconnect(wait=10)
+        # self.disconnect(wait=10)
 
     def restartAgent(self, to):
         self.send_message(mto=to,
@@ -454,8 +474,7 @@ class MUCBot(slixmpp.ClientXMPP):
     def schedulerfunction(self):
         self.manage_scheduler.process_on_event()
 
-
-    def __bool_data(self, variable, default = False):
+    def __bool_data(self, variable, default=False):
         if isinstance(variable, bool):
             return variable
         elif isinstance(variable, str):
@@ -464,39 +483,40 @@ class MUCBot(slixmpp.ClientXMPP):
         return default
 
     async def message(self, msg):
-        if msg['from'].bare == self.boundjid.bare :
+        if msg["from"].bare == self.boundjid.bare:
             logging.error("msg from/to self agent : no process.")
             return
-        if not msg['type'] == "chat":
-            logging.error("Stanza %s message no process."\
-                " only chat"% msg['type'])
+        if not msg["type"] == "chat":
+            logging.error("Stanza %s message no process." " only chat" % msg["type"])
             return
         is_correct_msg, typemessage = self._check_message(msg)
         if not is_correct_msg:
             logging.error("Stanza message no process : bad form")
             return
-        dataerreur={
-                    "action": "resultmsginfoerror",
-                    "sessionid" : "",
-                    "ret" : 255,
-                    "base64" : False,
-                    "data": {"msg" : "ERROR : Message structure"}}
-        try :
-            dataobj = json.loads(msg['body'])
+        dataerreur = {
+            "action": "resultmsginfoerror",
+            "sessionid": "",
+            "ret": 255,
+            "base64": False,
+            "data": {"msg": "ERROR : Message structure"},
+        }
+        try:
+            dataobj = json.loads(msg["body"])
 
         except Exception as e:
-            logging.error("bad struct Message %s %s " %(msg, str(e)))
-            self.send_message(  mto=msg['from'],
-                                        mbody=json.dumps(dataerreur),
-                                        mtype='chat')
-            logger.error("\n%s"%(traceback.format_exc()))
+            logging.error("bad struct Message %s %s " % (msg, str(e)))
+            self.send_message(
+                mto=msg["from"], mbody=json.dumps(dataerreur), mtype="chat"
+            )
+            logger.error("\n%s" % (traceback.format_exc()))
             return
-        if 'action' in dataobj and dataobj['action'] == 'infomachine':
-            dd ={'data': dataobj,
-                 'action': dataobj['action'],
-                 'sessionid': getRandomName(6, "registration"),
-                'ret': 0
-                 }
+        if "action" in dataobj and dataobj["action"] == "infomachine":
+            dd = {
+                "data": dataobj,
+                "action": dataobj["action"],
+                "sessionid": getRandomName(6, "registration"),
+                "ret": 0,
+            }
             dataobj = dd
 
         list_action_traiter_directement = []
@@ -505,8 +525,8 @@ class MUCBot(slixmpp.ClientXMPP):
             return
 
         ### Call plugin in action
-        try :
-            if 'action' in dataobj and dataobj['action'] != "" and 'data' in dataobj:
+        try:
+            if "action" in dataobj and dataobj["action"] != "" and "data" in dataobj:
                 # il y a une action a traite dans le message
                 if 'base64' in dataobj and self.__bool_data(dataobj['data']):
                     mydata = json.loads(base64.b64decode(dataobj['data']))
@@ -517,31 +537,37 @@ class MUCBot(slixmpp.ClientXMPP):
                     dataobj['sessionid']= getRandomName(6, "misssingid")
                     logging.warning("sessionid missing in message from %s : attributed sessionid %s " % (msg['from'], dataobj['sessionid']))
 
-                del dataobj['data']
-                if dataobj['action'] == 'infomachine': # infomachine call plugin registeryagent
-                    dataobj['action'] = 'registeryagent'
+                del dataobj["data"]
+                if (
+                    dataobj["action"] == "infomachine"
+                ):  # infomachine call plugin registeryagent
+                    dataobj["action"] = "registeryagent"
 
                 #traite plugin
                 try:
-                    msg['body'] = dataobj
-                    #logging.info("call plugin %s from %s" % (dataobj['action'],msg['from'].user))
+                    msg["body"] = dataobj
+                    # logging.info("call plugin %s from %s" % (dataobj['action'],msg['from'].user))
 
-                    dataerreur={ "action" : "result" + dataobj['action'],
-                     "data" : { "msg" : "error plugin : " + dataobj['action']},
-                     'sessionid': getRandomName(6, "misssingid"),
-                     'ret': 255,
-                     'base64': False}
-                    module = "%s/plugin_%s.py"%(self.modulepath, dataobj['action'])
-                    if 'ret' not in dataobj:
-                        dataobj['ret'] = 0
-                    call_plugin_sequentially( module,
-                                             self,
-                                             dataobj['action'],
-                                             dataobj['sessionid'],
-                                             mydata,
-                                             msg,
-                                             dataobj['ret'],
-                                             dataerreur)
+                    dataerreur = {
+                        "action": "result" + dataobj["action"],
+                        "data": {"msg": "error plugin : " + dataobj["action"]},
+                        "sessionid": getRandomName(6, "misssingid"),
+                        "ret": 255,
+                        "base64": False,
+                    }
+                    module = "%s/plugin_%s.py" % (self.modulepath, dataobj["action"])
+                    if "ret" not in dataobj:
+                        dataobj["ret"] = 0
+                    call_plugin_sequentially(
+                        module,
+                        self,
+                        dataobj["action"],
+                        dataobj["sessionid"],
+                        mydata,
+                        msg,
+                        dataobj["ret"],
+                        dataerreur,
+                    )
                 except TypeError:
                     if dataobj['action'] != "resultmsginfoerror":
                         dataerreur['data']['msg'] = "ERROR : plugin %s Missing"%dataobj['action']
