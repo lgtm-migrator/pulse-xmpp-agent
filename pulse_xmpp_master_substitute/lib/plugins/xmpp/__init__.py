@@ -1970,7 +1970,7 @@ class XmppMasterDatabase(DatabaseHelper):
                     Machines.kiosk_presence: kiosk_presence,
                     Machines.lastuser: lastuser,
                     Machines.keysyncthing: keysyncthing,
-                    Machines.enabled: "1",
+                    Machines.enabled: 1,
                     Machines.uuid_serial_machine: uuid_serial_machine,
                 }
             )
@@ -2047,7 +2047,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 new_machine.manufacturer = manufacturer
                 new_machine.glpi_entity_id = glpi_entity_id
                 new_machine.glpi_location_id = glpi_location_id
-                new_machine.enabled = "1"
+                new_machine.enabled = 1
                 new_machine.uuid_serial_machine = uuid_serial_machine
                 session.add(new_machine)
                 session.commit()
@@ -2055,7 +2055,7 @@ class XmppMasterDatabase(DatabaseHelper):
                 if agenttype == "relayserver":
                     sql = (
                         "UPDATE `xmppmaster`.`relayserver` \
-                                SET `enabled`='1' \
+                                SET `enabled`=1 \
                                 WHERE `xmppmaster`.`relayserver`.`nameserver`='%s';"
                         % hostname
                     )
