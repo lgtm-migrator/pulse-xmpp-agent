@@ -20,7 +20,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
 
-#fish: pulse_xmpp_master_substitute/bin/agent.py
+# fish: pulse_xmpp_master_substitute/bin/agent.py
 
 from slixmpp import jid
 import sys
@@ -94,12 +94,9 @@ class MUCBot(slixmpp.ClientXMPP):
             self.config.passwordconnection,
         )
         # We define the type of the Agent
-        self.config.agenttype = 'substitute'
+        self.config.agenttype = "substitute"
         self.manage_scheduler = manage_scheduler(self)
-        self.schedule('schedulerfunction',
-                            10 ,
-                            self.schedulerfunction,
-                            repeat=True)
+        self.schedule("schedulerfunction", 10, self.schedulerfunction, repeat=True)
         logger.debug("##############################################")
 
         ####################Update agent from MAster#############################
@@ -366,38 +363,43 @@ class MUCBot(slixmpp.ClientXMPP):
         # call plugin start
         startparameter = {
             "action": "start",
-            "sessionid" : getRandomName(6, "start"),
-            "ret" : 0,
-            "base64" : False,
-            "data" : {}}
-        dataerreur={ "action" : "result" + startparameter["action"],
-                     "data" : { "msg" : "error plugin : " + startparameter["action"]},
-                     'sessionid': startparameter['sessionid'],
-                     'ret': 255,
-                     'base64': False}
-        msg = {'from': self.boundjid.bare, "to" : self.boundjid.bare, 'type': 'chat' }
-        if 'data' not in startparameter:
-            startparameter['data'] = {}
-        module = "%s/plugin_%s.py"%(self.modulepath,  startparameter["action"])
-        call_plugin( module,
-                    self,
-                    startparameter["action"],
-                    startparameter['sessionid'],
-                    startparameter['data'],
-                    msg,
-                    dataerreur)
+            "sessionid": getRandomName(6, "start"),
+            "ret": 0,
+            "base64": False,
+            "data": {},
+        }
+        dataerreur = {
+            "action": "result" + startparameter["action"],
+            "data": {"msg": "error plugin : " + startparameter["action"]},
+            "sessionid": startparameter["sessionid"],
+            "ret": 255,
+            "base64": False,
+        }
+        msg = {"from": self.boundjid.bare, "to": self.boundjid.bare, "type": "chat"}
+        if "data" not in startparameter:
+            startparameter["data"] = {}
+        module = "%s/plugin_%s.py" % (self.modulepath, startparameter["action"])
+        call_plugin(
+            module,
+            self,
+            startparameter["action"],
+            startparameter["sessionid"],
+            startparameter["data"],
+            msg,
+            dataerreur,
+        )
 
-        #self.schedule('updatelistplugin', 20, self.loadPluginList, repeat=True)
+        # self.schedule('updatelistplugin', 20, self.loadPluginList, repeat=True)
+
     def signal_handler(self, signal, frame):
         logging.log(DEBUGPULSE, "CTRL-C EVENT")
-        msgevt={
-                    "action": "evtfrommachine",
-                    "sessionid" : getRandomName(6, "eventwin"),
-                    "ret" : 0,
-                    "base64" : False,
-                    'data': { 'machine': self.boundjid.jid ,
-                               'event'   : "CTRL_C_EVENT" }
-                    }
+        msgevt = {
+            "action": "evtfrommachine",
+            "sessionid": getRandomName(6, "eventwin"),
+            "ret": 0,
+            "base64": False,
+            "data": {"machine": self.boundjid.jid, "event": "CTRL_C_EVENT"},
+        }
         self.send_message_to_master(msgevt)
         self.shutdown = True
         logging.log(DEBUGPULSE, "shutdown xmpp agent %s!" % self.boundjid.user)
@@ -405,10 +407,9 @@ class MUCBot(slixmpp.ClientXMPP):
         # self.disconnect(wait=10)
 
     def restartAgent(self, to):
-        self.send_message(mto=to,
-                          mbody=json.dumps({'action': 'restartbot',
-                                        'data': ''}),
-                          mtype='chat')
+        self.send_message(
+            mto=to, mbody=json.dumps({"action": "restartbot", "data": ""}), mtype="chat"
+        )
 
     async def restartmachineasynchrone(self, jid):
         waittingrestart = random.randint(10, 20)
@@ -420,57 +421,64 @@ class MUCBot(slixmpp.ClientXMPP):
         # Check if restartAgent is not called from a plugin or a lib.
         self.restartAgent(jid)
 
-    def xmpplog(self,
-                text,
-                type = 'noset',
-                sessionname = '',
-                priority = 0,
-                action = "xmpplog",
-                who = "",
-                how = "",
-                why = "",
-                module = "",
-                date = None ,
-                fromuser = "",
-                touser = ""):
+    def xmpplog(
+        self,
+        text,
+        type="noset",
+        sessionname="",
+        priority=0,
+        action="xmpplog",
+        who="",
+        how="",
+        why="",
+        module="",
+        date=None,
+        fromuser="",
+        touser="",
+    ):
         if sessionname == "":
             sessionname = getRandomName(6, "logagent")
         if who == "":
             who = self.boundjid.bare
         if touser == "":
             touser = self.boundjid.bare
-        if 'xmpp' in self.config.plugins_list:
-            XmppMasterDatabase().setlogxmpp(text,
-                                            type=type,
-                                            sessionname=sessionname,
-                                            priority=priority,
-                                            who=who,
-                                            how=how,
-                                            why=why,
-                                            module=module,
-                                            action='',
-                                            touser=touser,
-                                            fromuser= fromuser)
+        if "xmpp" in self.config.plugins_list:
+            XmppMasterDatabase().setlogxmpp(
+                text,
+                type=type,
+                sessionname=sessionname,
+                priority=priority,
+                who=who,
+                how=how,
+                why=why,
+                module=module,
+                action="",
+                touser=touser,
+                fromuser=fromuser,
+            )
         else:
-            msgbody = {"action" : 'xmpplog',
-                    'sessionid': sessionname}
-            msgbody['data'] =  {'log': 'xmpplog',
-                                'text': text,
-                                'type': type,
-                                'session': sessionname,
-                                'priority': priority,
-                                'action': action ,
-                                'who': who,
-                                'how': how,
-                                'why': why,
-                                'module': module,
-                                'date': None ,
-                                'fromuser': fromuser,
-                                'touser': touser
-                                }
-            self.send_message(  mto = jid.JID(self.config.sub_logger),
-                                mbody=json.dumps(msgbody),
-                                mtype='chat')
+            msgbody = {"action": "xmpplog", "sessionid": sessionname}
+            msgbody["data"] = {
+                "log": "xmpplog",
+                "text": text,
+                "type": type,
+                "session": sessionname,
+                "priority": priority,
+                "action": action,
+                "who": who,
+                "how": how,
+                "why": why,
+                "module": module,
+                "date": None,
+                "fromuser": fromuser,
+                "touser": touser,
+            }
+            self.send_message(
+                mto=jid.JID(self.config.sub_logger),
+                mbody=json.dumps(msgbody),
+                mtype="chat",
+            )
+
     def schedulerfunction(self):
         self.manage_scheduler.process_on_event()
 
@@ -520,22 +528,25 @@ class MUCBot(slixmpp.ClientXMPP):
             dataobj = dd
 
         list_action_traiter_directement = []
-        if dataobj['action'] in list_action_traiter_directement:
-            #call function avec dataobj
+        if dataobj["action"] in list_action_traiter_directement:
+            # call function avec dataobj
             return
 
         ### Call plugin in action
         try:
             if "action" in dataobj and dataobj["action"] != "" and "data" in dataobj:
                 # il y a une action a traite dans le message
-                if 'base64' in dataobj and self.__bool_data(dataobj['data']):
-                    mydata = json.loads(base64.b64decode(dataobj['data']))
+                if "base64" in dataobj and self.__bool_data(dataobj["data"]):
+                    mydata = json.loads(base64.b64decode(dataobj["data"]))
                 else:
-                    mydata = dataobj['data']
+                    mydata = dataobj["data"]
 
-                if 'sessionid' not in dataobj:
-                    dataobj['sessionid']= getRandomName(6, "misssingid")
-                    logging.warning("sessionid missing in message from %s : attributed sessionid %s " % (msg['from'], dataobj['sessionid']))
+                if "sessionid" not in dataobj:
+                    dataobj["sessionid"] = getRandomName(6, "misssingid")
+                    logging.warning(
+                        "sessionid missing in message from %s : attributed sessionid %s "
+                        % (msg["from"], dataobj["sessionid"])
+                    )
 
                 del dataobj["data"]
                 if (
@@ -543,7 +554,7 @@ class MUCBot(slixmpp.ClientXMPP):
                 ):  # infomachine call plugin registeryagent
                     dataobj["action"] = "registeryagent"
 
-                #traite plugin
+                # traite plugin
                 try:
                     msg["body"] = dataobj
                     # logging.info("call plugin %s from %s" % (dataobj['action'],msg['from'].user))
@@ -569,39 +580,48 @@ class MUCBot(slixmpp.ClientXMPP):
                         dataerreur,
                     )
                 except TypeError:
-                    if dataobj['action'] != "resultmsginfoerror":
-                        dataerreur['data']['msg'] = "ERROR : plugin %s Missing"%dataobj['action']
-                        dataerreur['action'] = "result%s"%dataobj['action']
-                        self.send_message(  mto=msg['from'],
-                                            mbody=json.dumps(dataerreur),
-                                            mtype='chat')
-                    logging.error("TypeError execution plugin %s : [ERROR : plugin Missing] %s" %(dataobj['action'],sys.exc_info()[0]))
-                    logger.error("\n%s"%(traceback.format_exc()))
+                    if dataobj["action"] != "resultmsginfoerror":
+                        dataerreur["data"]["msg"] = (
+                            "ERROR : plugin %s Missing" % dataobj["action"]
+                        )
+                        dataerreur["action"] = "result%s" % dataobj["action"]
+                        self.send_message(
+                            mto=msg["from"], mbody=json.dumps(dataerreur), mtype="chat"
+                        )
+                    logging.error(
+                        "TypeError execution plugin %s : [ERROR : plugin Missing] %s"
+                        % (dataobj["action"], sys.exc_info()[0])
+                    )
+                    logger.error("\n%s" % (traceback.format_exc()))
 
                 except Exception as e:
-                    logging.error("execution plugin [%s]  : %s " % (dataobj['action'],str(e)))
-                    logger.error("\n%s"%(traceback.format_exc()))
-                    if dataobj['action'].startswith('result'):
+                    logging.error(
+                        "execution plugin [%s]  : %s " % (dataobj["action"], str(e))
+                    )
+                    logger.error("\n%s" % (traceback.format_exc()))
+                    if dataobj["action"].startswith("result"):
                         return
-                    if dataobj['action'] != "resultmsginfoerror":
-                        dataerreur['data']['msg'] = "ERROR : plugin execution %s"%dataobj['action']
-                        dataerreur['action'] = "result%s"%dataobj['action']
-                        self.send_message(  mto=msg['from'],
-                                            mbody=json.dumps(dataerreur),
-                                            mtype='chat')
+                    if dataobj["action"] != "resultmsginfoerror":
+                        dataerreur["data"]["msg"] = (
+                            "ERROR : plugin execution %s" % dataobj["action"]
+                        )
+                        dataerreur["action"] = "result%s" % dataobj["action"]
+                        self.send_message(
+                            mto=msg["from"], mbody=json.dumps(dataerreur), mtype="chat"
+                        )
             else:
                 # il n'y pas d action a traite dans le message
-                dataerreur['data']['msg'] = "ERROR : Action ignored"
-                self.send_message(  mto=msg['from'],
-                                        mbody=json.dumps(dataerreur),
-                                        mtype='chat')
+                dataerreur["data"]["msg"] = "ERROR : Action ignored"
+                self.send_message(
+                    mto=msg["from"], mbody=json.dumps(dataerreur), mtype="chat"
+                )
         except Exception as e:
-            logging.error("bad struct Message %s %s " %(msg, str(e)))
-            dataerreur['data']['msg'] = "ERROR : Message structure"
-            self.send_message(  mto=msg['from'],
-                                        mbody=json.dumps(dataerreur),
-                                        mtype='chat')
-            logger.error("\n%s"%(traceback.format_exc()))
+            logging.error("bad struct Message %s %s " % (msg, str(e)))
+            dataerreur["data"]["msg"] = "ERROR : Message structure"
+            self.send_message(
+                mto=msg["from"], mbody=json.dumps(dataerreur), mtype="chat"
+            )
+            logger.error("\n%s" % (traceback.format_exc()))
 
     def iqsendpulse(self, to, datain, timeout):
         # send iq synchronous message
@@ -621,37 +641,41 @@ class MUCBot(slixmpp.ClientXMPP):
             logging.error("iqsendpulse : encode base64 : %s" % str(e))
             return '{"err" : "%s"}' % str(e).replace('"', "'")
         try:
-            iq = self.make_iq_get(queryxmlns='custom_xep', ito=to)
-            itemXML = ET.Element('{%s}data' % data)
+            iq = self.make_iq_get(queryxmlns="custom_xep", ito=to)
+            itemXML = ET.Element("{%s}data" % data)
             for child in iq.xml:
-                if child.tag.endswith('query'):
+                if child.tag.endswith("query"):
                     child.append(itemXML)
             try:
                 result = iq.send(timeout=timeout)
-                if result['type'] == 'result':
+                if result["type"] == "result":
                     for child in result.xml:
-                        if child.tag.endswith('query'):
+                        if child.tag.endswith("query"):
                             for z in child:
-                                if z.tag.endswith('data'):
+                                if z.tag.endswith("data"):
                                     # decode result
                                     # TODO : Replace print by log
-                                    #print z.tag[1:-5]
+                                    # print z.tag[1:-5]
                                     return base64.b64decode(z.tag[1:-5])
                                     try:
                                         data = base64.b64decode(z.tag[1:-5])
                                         # TODO : Replace print by log
-                                        #print "RECEIVED data"
-                                        #print data
+                                        # print "RECEIVED data"
+                                        # print data
                                         return data
                                     except Exception as e:
                                         logging.error("iqsendpulse : %s" % str(e))
-                                        logger.error("\n%s"%(traceback.format_exc()))
-                                        return '{"err" : "%s"}' % str(e).replace('"', "'")
+                                        logger.error("\n%s" % (traceback.format_exc()))
+                                        return '{"err" : "%s"}' % str(e).replace(
+                                            '"', "'"
+                                        )
                                     return "{}"
             except IqError as e:
                 err_resp = e.iq
-                logging.error("iqsendpulse : Iq error %s" % str(err_resp).replace('"', "'"))
-                logger.error("\n%s"%(traceback.format_exc()))
+                logging.error(
+                    "iqsendpulse : Iq error %s" % str(err_resp).replace('"', "'")
+                )
+                logger.error("\n%s" % (traceback.format_exc()))
                 return '{"err" : "%s"}' % str(err_resp).replace('"', "'")
 
             except IqTimeout:
@@ -659,6 +683,6 @@ class MUCBot(slixmpp.ClientXMPP):
                 return '{"err" : "Timeout Error"}'
         except Exception as e:
             logging.error("iqsendpulse : error %s" % str(e).replace('"', "'"))
-            logger.error("\n%s"%(traceback.format_exc()))
+            logger.error("\n%s" % (traceback.format_exc()))
             return '{"err" : "%s"}' % str(e).replace('"', "'")
         return "{}"
