@@ -18,6 +18,9 @@ import re
 import MySQLdb
 import traceback
 
+if sys.version_info >= (3,0,0):
+    basestring = (str, bytes)
+
 logger = logging.getLogger()
 
 # WARNING: The descriptor MUST be in one line
