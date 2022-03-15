@@ -1678,7 +1678,7 @@ def is_connectedServer(ip, port):
         sock.close()
 
 
-#unpad = lambda s: s[0 : -ord(s[-1])]
+
 
 
 class AESCipher:

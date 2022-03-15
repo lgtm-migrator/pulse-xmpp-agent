@@ -86,6 +86,8 @@ from distutils.version import LooseVersion
 from lib.configuration import confParameter
 from lib.plugins.xmpp import XmppMasterDatabase
 
+if sys.version_info >= (3,0,0):
+    basestring = (str, bytes)
 
 if sys.version_info >= (3,0,0):
     basestring = (str, bytes)

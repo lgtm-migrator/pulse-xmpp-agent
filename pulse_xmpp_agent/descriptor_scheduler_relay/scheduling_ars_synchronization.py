@@ -23,13 +23,8 @@ if sys.version_info >= (3,0,0):
 
 logger = logging.getLogger()
 
-# WARNING: The descriptor MUST be in one line
-plugin = {
-    "VERSION": "1.0.005",
-    "NAME": "scheduling_ars_synchronization",
-    "TYPE": "all",
-    "SCHEDULED": True,
-}
+# WARNING: The plugin variable MUST be in one line.
+plugin = {"VERSION": "1.0.005", "NAME": "scheduling_ars_synchronization", "TYPE": "all", "SCHEDULED": True, } # fmt: skip
 
 SCHEDULE = {"schedule": "*/1 * * * *", "nb": -1}
 
