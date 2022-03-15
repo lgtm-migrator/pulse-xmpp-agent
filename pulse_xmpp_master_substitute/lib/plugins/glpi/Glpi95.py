@@ -81,9 +81,6 @@ from lib.plugins.xmpp import XmppMasterDatabase
 if sys.version_info >= (3,0,0):
     basestring = (str, bytes)
 
-if sys.version_info >= (3,0,0):
-    basestring = (str, bytes)
-
 class Singleton(object):
     def __new__(type, *args):
         if "_the_instance" not in type.__dict__:
