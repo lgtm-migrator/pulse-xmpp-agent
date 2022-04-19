@@ -42,7 +42,7 @@ import types
 import time
 import sys
 import hashlib
-
+import asyncio
 # 3rd party modules
 import posix_ipc
 
@@ -67,8 +67,20 @@ def action(xmppobject, action):
                 xmppobject.mq = posix_ipc.MessageQueue("/mysend", posix_ipc.O_CREX)
             except posix_ipc.ExistentialError:
                 xmppobject.mq = posix_ipc.MessageQueue("/mysend")
+            except OSError as e:
+                logger.error("ERROR CREATE QUEUE POSIX %s" % e)
+                logger.error("eg : admin (/etc/security/limits.conf and  /etc/sysctl.conf")
+            except Exception as e:
+                logger.error("exception %s" % e)
+                logger.error("\n%s"%(traceback.format_exc()))
+            #try:
+                #xmppobject.mq = posix_ipc.MessageQueue("/myrep", posix_ipc.O_CREX)
+            #except posix_ipc.ExistentialError:
+                #xmppobject.mq = posix_ipc.MessageQueue("/myrep")
+
+        logger.debug("================ RUNNING SERVER MMC ================")
         while 1:
-            logger.debug("================ SERVEUR FILE MESSAGE =====================")
+            logger.debug("================ SERVEUR FILE MESSAGE1 ================")
             # lit file d'attente json en bytes.
             # action suivant demande
             # send message
@@ -83,28 +95,29 @@ def action(xmppobject, action):
         logger.error("Plugin loadarscheck, we encountered the error %s" % str(e))
         logger.error("We obtained the backtrace %s" % traceback.format_exc())
 
-    #['base', 'support', 'backuppc', 'glpi', 'xmppmaster', 'admin', 'dashboard', 'dyngroup', 'msc', 'pkgs', 'services', 'guacamole', 'imaging', 'pulse2']
-
-def decode_msg(xmppobject, msg,prioritymsg):
+def decode_msg(xmppobject, msg, prioritymsg):
     msg=msg.decode('utf-8')
     if prioritymsg == 9:
         # notify string
         logger.error("Notify  Priority msg :%s\nmsg :%s" % (prioritymsg, msg))
-    elif prioritymsg == 4:
-        # info mmc string
-        logger.debug("information mmc Priority msg :%s\nmsg :%s" % (prioritymsg, msg))
-        information_mmc(xmppobject, msg)
     elif prioritymsg == 5:
         # send message xmpp
         obj=json.loads(msg)
         logger.error("recv : type :%s\n%s" % (msg, prioritymsg))
         send_message_file(xmppobject, obj)
-
+    elif prioritymsg == 4:
+        # info mmc string
+        logger.debug("information mmc Priority msg :%s\nmsg :%s" % (prioritymsg, msg))
+        information_mmc(xmppobject, msg)
+    elif prioritymsg == 2:
+        logger.debug("================ iq demande ================")
+        #iq demander
+        send_iq_message(xmppobject, msg)
 
 def information_mmc(xmppobject, *args, **kwargs):
     if args:
         for value in args:
-            if isinsance(value, (bytes)):
+            if isinstance(value, (bytes)):
                 value = value.decode('utf-8')
         if args[0]:
             obj=json.loads(args[0])
@@ -113,14 +126,47 @@ def information_mmc(xmppobject, *args, **kwargs):
                     xmppobject.list_mmc = obj['data']
                     logger.error("list des modules MMC sont : %s" % (xmppobject.list_mmc))
 
-                    #xmppobject.list_mmc
+def send_iq_message(xmppobject, msg):
+    logger.error("JFKJFK MSG msg %s" % (msg))
+    obj=json.loads(msg)
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    #loop = asyncio.get_event_loop()
+    logger.error("JFKJFK LOOP msg %s" % (type(loop)))
+    # creation queu resultat
+    logger.error("JFKJFK creaton queue  %s" % (obj['name_iq_queue']))
+    try:
+        mqresult = posix_ipc.MessageQueue(obj['name_iq_queue'], posix_ipc.O_CREX)
+        logger.error("JFKJFK creaton queue  %s" % (obj['name_iq_queue']))
+    except posix_ipc.ExistentialError:
+        logger.error("JFKJFK exist deja  queue  %s" % (obj['name_iq_queue']))
+        mqresult = posix_ipc.MessageQueue(obj['name_iq_queue'])
 
+    mtimeout = obj['mtimeout']
+    logger.error("JFKJFK mtimeout %s" % (mtimeout))
+    destinataire = obj['mto']
+    logger.error("JFKJFK to machine %s" % (obj['mto']))
+    #del obj['name_iq_queue']
+    del obj['mto']
+    del obj['mtimeout']
+    #mbody=json.dumps(obj, cls=DateTimebytesEncoderjson)
+    #result = xmppobject.iqsendpulse( destinataire, obj, 20)
+    #result =  loop.run_in_executor(
+        #None, xmppobject.iqsendpulse( destinataire, obj, 20))
+    #print('reponse to', obj['name_iq_queue'])
+    result = xmppobject.iqsendpulse1(destinataire, obj, mtimeout)
 
+    #result =  loop.run_in_executor(
+        #None, xmppobject.iqsendpulse, destinataire, obj, 20)
+    #print('default thread pool', result)
+
+    #logger.error("JFKJFK MSG RECU %s %s" % (result, type(result)))
+    #mqresult.send(b'yes', priority=2 )
 
 def send_message_file(xmppobject, *args, **kwargs):
     if args:
         for value in args:
-            if isinsance(value, (bytes)):
+            if isinstance(value, (bytes)):
                 value = value.decode('utf-8')
     if kwargs:
         if "to" in kwargs:
@@ -162,11 +208,11 @@ def send_message_file(xmppobject, *args, **kwargs):
             ret=0
 
         if "data" in kwargs:
-            if isinsance(kwargs["data"], ( list, dict, tuple, float, int, datetime)):
+            if isinstance(kwargs["data"], ( list, dict, tuple, float, int, datetime)):
                 data = json.dumps(kwargs["data"], cls=DateTimebytesEncoderjson)
-            elif isinsance(kwargs["data"], (bytes)):
+            elif isinstance(kwargs["data"], (bytes)):
                data = kwargs["data"].decode('utf-8')
-            elif isinsance(kwargs["data"], (str)):
+            elif isinstance(kwargs["data"], (str)):
                data = kwargs["data"]
             else:
                data=""
@@ -184,7 +230,7 @@ def send_message_file(xmppobject, *args, **kwargs):
             # arg[0] jid to
             to = arg[0]
             # arg[1] string body message or dict struct message
-            if isinsance(arg[1], (dict)):
+            if isinstance(arg[1], (dict)):
                 msg = json.dumps( arg[1], cls=DateTimebytesEncoderjson )
         else:
             return False

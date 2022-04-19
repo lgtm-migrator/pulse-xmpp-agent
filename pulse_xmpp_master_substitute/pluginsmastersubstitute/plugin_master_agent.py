@@ -32,7 +32,8 @@ from lib.plugins.glpi import Glpi
 from lib.plugins.kiosk import KioskDatabase
 from lib.manageRSAsigned import MsgsignedRSA
 from slixmpp import jid
-from lib.utils import getRandomName, call_plugin
+from lib.utils import getRandomName, call_plugin, call_plugin_separate
+#, call_pluginseparatedthred
 import re
 from distutils.version import LooseVersion
 import configparser
@@ -46,16 +47,15 @@ plugin = {"VERSION": "1.0", "NAME": "master_agent", "TYPE": "substitute"}
 
 def action(xmppobject, action, sessionid, data, msg, dataerreur):
     try:
-        logger.debug("=====================================================")
+        logger.debug("========================================================")
         logger.debug("call %s from %s" % (plugin, msg["from"]))
-        logger.debug("=====================================================")
+        logger.debug("=======================================================")
         compteurcallplugin = getattr(xmppobject, "num_call%s" % action)
-
         if compteurcallplugin == 0:
-            logger.debug("=====================================================")
+            logger.debug("===================== master_agent =====================")
+            logger.debug("========================================================")
             read_conf_remote_master_agent(xmppobject)
-            logger.debug("=====================================================")
-
+            logger.debug("========================================================")
     except Exception as e:
         logger.error("Plugin loadarscheck, we encountered the error %s" % str(e))
         logger.error("We obtained the backtrace %s" % traceback.format_exc())
@@ -66,12 +66,16 @@ def read_conf_remote_master_agent(xmppobject):
     logger.debug("Install fonction code masterfunctioncode")
     xmppobject.masterfunctioncode = types.MethodType( masterfunctioncode, xmppobject)
     module = "%s/plugin_%s.py"%(xmppobject.modulepath,  "__server_file")
+    logger.debug("================= INSTALL server_file mmc =================")
     logger.debug("module :% s " % module)
     call_plugin( module,
                 xmppobject,
                 "server_file")
+
+    logger.debug("================ server_file mmc INSTALLED ================")
     try:
-        pathfileconf = os.path.join(xmppobject.config.pathdirconffile, namefichierconf)
+        pathfileconf = os.path.join(xmppobject.config.pathdirconffile,
+                                    namefichierconf)
         if not os.path.isfile(pathfileconf):
             logger.warning(
                 "Plugin %s\nConfiguration file :"\
