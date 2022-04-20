@@ -156,7 +156,7 @@ class MUCBot(slixmpp.ClientXMPP):
                 try:
                     posix_ipc.unlink_message_queue("/"+f)
                 except:
-                    logger.debug("JFKJFK erreur SUPPRIME MQ %s" % f)
+                    logger.debug("SUPPRIME MQ %s" % f)
 
 
     def clean_my_mpqueue(self):
