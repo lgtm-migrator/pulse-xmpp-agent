@@ -27,7 +27,7 @@ import sys
 import os
 import os.path
 
-# import traceback
+import traceback
 import logging
 import time
 from datetime import datetime
@@ -159,7 +159,7 @@ class manage_scheduler:
                 self.add_event(name, datascheduler)
             except Exception as e:
                 logging.getLogger().error(str(e))
-                pass
+                logging.getLogger().error("\n%s"%(traceback.format_exc()))
 
     def replacecrontabdescriptor(self, descrip):
         rep = []
