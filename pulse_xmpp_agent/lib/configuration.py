@@ -23,6 +23,8 @@
 # file : lib/configuration.py
 #
 
+import sys
+
 if sys.version_info[0] == 3:
     from configparser import ConfigParser
     from slixmpp import jid
@@ -31,14 +33,12 @@ else:
     from sleekxmpp import jid
 import netifaces
 import json
-import sys
 import platform
 import os
 import logging
 from . import utils
 import random
 from .agentconffile import conffilename
-
 from .agentconffile import directoryconffile
 from .utils import ipfromdns
 import re
