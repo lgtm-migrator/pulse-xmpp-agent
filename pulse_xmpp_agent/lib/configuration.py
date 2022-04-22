@@ -20,7 +20,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
 #
-# file : lib/configuration.py
+# file : pulse_xmpp_agent/lib/configuration.py
 #
 
 import sys
@@ -292,6 +292,9 @@ class confParameter:
     def __init__(self, typeconf="machine"):
         Config = ConfigParser()
         namefileconfig = conffilename(typeconf)
+        if not os.path.isfile(namefileconfig):
+            logger.error("file missing %s" % namefileconfig)
+            logger.error('verify type "agent machine or relayserver"')
         Config.read(namefileconfig)
         if os.path.exists(namefileconfig + ".local"):
             Config.read(namefileconfig + ".local")
@@ -703,11 +706,11 @@ class confParameter:
         except BaseException:
             self.levellog = 20
         try:
-            self.log_level_sleekxmpp = self._levellogdata(
-                Config.get("global", "log_level_sleekxmpp")
+            self.log_level_slixmpp = self._levellogdata(
+                Config.get("global", "log_level_slixmpp")
             )
         except BaseException:
-            self.log_level_sleekxmpp = 50
+            self.log_level_slixmpp = 50
 
         if Config.has_option("configuration_server", "confdomain"):
             self.confdomain = Config.get("configuration_server", "confdomain")

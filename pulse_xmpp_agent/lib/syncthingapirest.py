@@ -20,7 +20,8 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
 #
-# file: lib/syncthingapirest.py
+# file : pulse_xmpp_agent/lib/syncthingapirest.py
+#
 
 """
     this class allows via a rest interface to configure syncthing.
