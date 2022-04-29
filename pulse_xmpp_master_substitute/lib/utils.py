@@ -582,12 +582,12 @@ def call_plugin(name, *args, **kwargs):
         count = getattr(args[0], "num_call%s" % args[1])
         setattr(args[0], "num_call%s" % args[1], count + 1)
     except AttributeError:
-        count = 0
-        setattr(args[0], "num_call%s" % args[1], count)
+        setattr(args[0], "num_call%s" % args[1], 0)
     pluginaction = loadModule(name)
     #loop.call_soon_threadsafe(pluginaction.action, *args, **kwargs)
     result =  loop.run_in_executor(
         None, pluginaction.action, *args, **kwargs)
+
 
 def call_plugin_sequentially(name, *args, **kwargs):
     # add compteur appel plugins
