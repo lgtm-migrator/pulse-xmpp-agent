@@ -599,16 +599,16 @@ class MUCBot(slixmpp.ClientXMPP):
                     module = "%s/plugin_%s.py" % (self.modulepath, dataobj["action"])
                     if "ret" not in dataobj:
                         dataobj["ret"] = 0
-                        #call_plugin_sequentially(
-                        call_plugin(
-                        module,
-                        self,
-                        dataobj["action"],
-                        dataobj["sessionid"],
-                        mydata,
-                        msg,
-                        dataobj["ret"],
-                        dataerreur,
+                    #call_plugin_sequentially(
+                    call_plugin(
+                    module,
+                    self,
+                    dataobj["action"],
+                    dataobj["sessionid"],
+                    mydata,
+                    msg,
+                    dataobj["ret"],
+                    dataerreur,
                     )
                 except TypeError:
                     if dataobj['action'] != "resultmsginfoerror":
