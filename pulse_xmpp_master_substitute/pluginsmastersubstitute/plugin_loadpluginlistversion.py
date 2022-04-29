@@ -170,7 +170,9 @@ def remoteinstallPlugin(self):
 def deployPlugin(self, jid, plugin):
     content = ""
     fichierdata = {}
-    namefile = os.path.join(self.dirpluginlist, "plugin_%s.py" % plugin)
+    namefile = os.path.join(self.dirpluginlist, "plugin_%s" % plugin)
+    if not namefile.endswith(".py"):
+        namefile+=".py"
     if os.path.isfile(namefile):
         logger.debug("File plugin found %s" % namefile)
     else:
