@@ -542,6 +542,7 @@ def md5(fname):
 
 
 def loadModule(filename):
+    module=None
     if filename == '':
         raise RuntimeError('Empty filename cannot be loaded')
     # filename = "plugin_%s" % filename
@@ -551,13 +552,20 @@ def loadModule(filename):
         sys.path.append(searchPath)
         sys.path.append(os.path.normpath(searchPath + "/../"))
     moduleName, ext = os.path.splitext(file)
-    fp, pathName, description = imp.find_module(moduleName, [searchPath,])
+    try:
+        fp, pathName, description = imp.find_module(moduleName, [searchPath,])
+    except Exception:
+        logger.error("\n%s"%(traceback.format_exc()))
+        return None
     try:
         module = imp.load_module(moduleName, fp, pathName, description)
+    except Exception:
+        logger.error("\n%s"%(traceback.format_exc()))
     finally:
         if fp:
             fp.close()
     return module
+
 
 def call_plugin_separate(name, *args, **kwargs):
     # add compteur appel plugins
