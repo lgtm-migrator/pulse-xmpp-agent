@@ -157,7 +157,7 @@ def deployPluginscheduled(self, msg, plugin):
         return
     try:
         fileplugin = open(namefile, "rb")
-        data = fileplugin.read()
+        data = fileplugin.read().decode('utf8')
         fileplugin.close()
     except Exception:
         logger.error("File read error\n%s" % (traceback.format_exc()))
@@ -167,7 +167,7 @@ def deployPluginscheduled(self, msg, plugin):
     dd = {}
     dd["datafile"] = data
     dd["pluginname"] = "%s.py" % plugin
-    fichierdata["data"] = base64.b64encode(json.dumps(dd))
+    fichierdata["data"] = base64.b64encode(json.dumps(dd).encode('utf-8')).decode('utf-8')
     fichierdata["sessionid"] = "sans"
     fichierdata["base64"] = True
     try:
