@@ -170,9 +170,9 @@ class MUCBot(slixmpp.ClientXMPP):
                 if f.startswith("/"+ self.boundjid.user):
                     try:
                         posix_ipc.unlink_message_queue("/"+f)
-                        logger.debug("JFKJFK SUPPRIME MQ %s" % f)
+                        logger.debug("SUPPRIME MQ %s" % f)
                     except:
-                        logger.debug("JFKJFK erreur SUPPRIME MQ %s" % f)
+                        logger.debug("erreur SUPPRIME MQ %s" % f)
     # -----------------------------------------------------------------------
     # ----------------------- Getion connection agent -----------------------
     # -----------------------------------------------------------------------
@@ -686,7 +686,6 @@ class MUCBot(slixmpp.ClientXMPP):
                     child.append(itemXML)
             try:
                 self.datas_send.append(datafile)
-                logger.debug("JFKJFK self.datas_send %s" % self.datas_send)
                 result = iq.send(timeout=timeout)
             except IqError as e:
                 err_resp = e.iq
@@ -881,23 +880,16 @@ class MUCBot(slixmpp.ClientXMPP):
 
 
     async def _handle_custom_iq_error(self, iq):
-        logger.debug("============================================= JFKJFK REV IQ EROR")
         if iq['type'] == 'error':
             miqkeys = iq.keys()
             logger.debug("ERROR ERROR TYPE %s" %iq['id'])
             logger.debug("ERROR ERROR TYPE %s" %miqkeys)
             errortext = iq['error']['text']
             #ERROR ERROR TYPE ['id', 'to', 'from', 'query', 'type', 'error', 'lang']
-
-
-            #logger.debug("process IQ result id %s" %iq['id'])
-            #logger.debug("JFKJFK _handle_custom_iq_error ANALYSE RESULT")
-            #logger.debug("IQ EXIST %s" %iq['id'])
             t=time.time()
             queue=""
             liststop=[]
             dellqueue=[]
-
             logger.debug("time ref %s" % t)
             try:
                 for ta in self.datas_send:
@@ -961,8 +953,6 @@ class MUCBot(slixmpp.ClientXMPP):
                 logger.error("\n%s"%(traceback.format_exc()))
 
     async def _handle_custom_iq(self, iq):
-        logger.debug("============================================= JFKJFK REV IQ GET")
-
         if iq['query'] != "custom_xep":
             return
         if iq['type'] == 'get':
@@ -973,9 +963,6 @@ class MUCBot(slixmpp.ClientXMPP):
             logger.debug("ERROR ERROR TYPE %s" %iq['id'])
 
         elif iq['type'] == 'result':
-            logger.debug("process IQ result id %s" %iq['id'])
-            logger.debug("JFKJFK _handle_custom_iq ANALYSE RESULT")
-            logger.debug("IQ EXIST %s" %iq['id'])
             t=time.time()
             queue=""
             liststop=[]
@@ -1037,7 +1024,7 @@ class MUCBot(slixmpp.ClientXMPP):
                         if z.tag.endswith('data'):
                             ret= base64.b64decode(bytes(z.tag[1:-5],
                                                         'utf-8'))
-                            logger.debug("JFKJFK injection in queue %s in %s" %(queue,
+                            logger.debug("injection in queue %s in %s" %(queue,
                                                                                 ret))
                             quposix.send(ret, 2)
                             logger.debug("Result inject to %s" % (queue))
@@ -1059,7 +1046,7 @@ class MUCBot(slixmpp.ClientXMPP):
                             return ret
         else:
             # ... This will capture error responses too
-            logger.debug("JFKJFK REV IQ OTHRER TYPE REQUEST")
+            logger.debug("REV IQ OTHRER TYPE REQUEST")
             ret="{}"
             return ret
             pass
