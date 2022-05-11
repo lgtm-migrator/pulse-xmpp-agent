@@ -2216,7 +2216,7 @@ def curlgetdownloadfile(destfile, urlfile, insecure=True, token=None, limit_rate
     # can write response body to it without decoding.
     with open(destfile, 'wb') as f:
         if token is not None:
-            headers = ["X-Authorisation"+token]
+            headers = ["X-Authorization:"+token]
         c = pycurl.Curl()
         urlfile = urlfile.replace(" ", "%20")
         c.setopt(c.URL, urlfile)
