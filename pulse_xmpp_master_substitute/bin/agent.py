@@ -959,7 +959,7 @@ class MUCBot(slixmpp.ClientXMPP):
             pass
         elif iq['type'] == 'set':
             pass
-        elif id['type'] == 'error':
+        elif iq['type'] == 'error':
             logger.debug("ERROR ERROR TYPE %s" %iq['id'])
 
         elif iq['type'] == 'result':
