@@ -42,7 +42,7 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     try:
         # Do not proceed if backup_enabled is not set to 1
         if hasattr(xmppobject.config, 'backup_enabled'):
-            if xmppobject.config.backup_enabled == 1:
+            if bool(int(xmppobject.config.backup_enabled)):
                 # Update if version is lower
                 installed_version = checkurbackupversion()
                 if StrictVersion(installed_version) < StrictVersion(URBACKUP_VERSION):
