@@ -72,7 +72,7 @@ def updatebackupclient(xmppobject):
     install_tempdir = tempfile.mkdtemp(dir=windows_tempdir)
 
     if sys.platform.startswith('win'):
-        filename = 'UrBackup Client %s.exe' % URBACKUP_VERSION
+        filename = 'UrBackup_Client_%s.exe' % URBACKUP_VERSION
         dl_url = 'http://%s/downloads/win/downloads/%s' % (
             xmppobject.config.Server, filename)
         logger.debug("Downloading %s" % dl_url)
