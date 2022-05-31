@@ -111,7 +111,7 @@ def loadPluginList(self):
     """charges les informations des plugins 'nom plugins et version' pour
     faire la comparaison avec les plugin sur les machines.
     """
-    logger.debug("Load and Verify base plugin")
+    logger.debug("Load and Verify base plugin %s "%self.dirpluginlist)
     self.plugindata = {}
     self.plugintype = {}
     for element in [
