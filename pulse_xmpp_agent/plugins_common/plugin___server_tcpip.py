@@ -42,7 +42,7 @@ import json
 import pickle
 
 from lib.agentconffile import directoryconffile
-from lib.utils import DateTimebytesEncoderjson, simplecommand
+from lib.utils import DateTimebytesEncoderjson, simplecommand, AESCipher, isBase64
 
 logger = logging.getLogger()
 
@@ -167,10 +167,19 @@ async def handle_client(client, xmppobject):
                 "Only local client for client")
             return
         while request != '':
-            # break pour clore la connexion du client connexion, suite a l'action de la requette.
-            request = (await loop.sock_recv(client, 1048576))
+            # request = (await loop.sock_recv(client, 255)).decode('utf8')
+            request = (await loop.sock_recv(client, xmppobject.sizebufferrecv))
+            if len(request) >= xmppobject.sizebufferrecv:
+                logger.warning("message may be incomplete : size message Recv is egal max size message (%s) :\"verify param sizebufferrecv\""%xmppobject.sizebufferrecv)
+            if xmppobject.encryptionAES and len(xmppobject.config.keyAES32) > 0:
+                if not isBase64(request.strip()):
+                    logger.warning("message input no encryption")
+                else:
+                    logger.warning("message input base64")
+                cipher = AESCipher(xmppobject.config.keyAES32)
+                request = cipher.decrypt(str(request.decode('utf8')))
+                logger.warning("request data is %s"%request)
             requestobj = _convert_string(request)
-
             if requestobj is None:
                 break
             if isinstance(requestobj, (str)):
@@ -196,7 +205,7 @@ async def handle_client(client, xmppobject):
                         await loop.sock_sendall(client,"aucun resultat".encode('utf-8'))
                     if isinstance(result, (list, dict, set, tuple)):
                         await loop.sock_sendall(client, json.dumps(result, cls=DateTimebytesEncoderjson, indent=4).encode('utf-8'))
-                    elif isinstance(result, (str))
+                    elif isinstance(result, (str)):
                         await loop.sock_sendall(client,result.encode('utf-8') )
                     elif isinstance(result, (bytes)):
                         await loop.sock_sendall(client,result)
@@ -243,6 +252,7 @@ async def run_server(xmppobject):
         server.bind(('localhost', xmppobject.port_tcp_kiosk))
         server.listen(8)
     except Exception as e:
+        logger.error("connect 'localhost', %s " %( xmppobject.port_tcp_kiosk))
         logger.error("message error %s" % str(e))
         logger.error("backtrace handle_client %s" % traceback.format_exc())
         return
@@ -254,4 +264,4 @@ async def run_server(xmppobject):
         logger.warning("Start Server")
         client, client_address = await loop.sock_accept(server)
         loop.create_task(handle_client(client, xmppobject))
-        logger.warning("fin dede")
+        logger.warning("fin Server")
