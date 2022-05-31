@@ -278,6 +278,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
                             "Calling plugins for all registration actions on online machine."
                         )
                     for function_plugin in pluginfunction:
+                        # call function definie in plugin load
                         try:
                             if hasattr(xmppobject, function_plugin):
                                 if showinfobool:
@@ -931,6 +932,7 @@ def action(xmppobject, action, sessionid, data, msg, ret, dataobj):
             if showinfobool:
                 logger.info("Calling plugin action for machine %s ." % msg["from"])
             for function_plugin in pluginfunction:
+                # call function definie in plugin load
                 try:
                     if hasattr(xmppobject, function_plugin):
                         if showinfobool:
