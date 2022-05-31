@@ -3476,6 +3476,8 @@ AGENT %s ERROR TERMINATE""" % (
             "countstart": save_count_start(),
             "keysyncthing": self.deviceid,
             "uuid_serial_machine": serialnumbermachine(),
+            "updatingplugin": self.config.updatingplugin,
+            "updatingagent": self.config.updating,
         }
         try:
             dataobj["md5_conf_monitoring"] = ""
