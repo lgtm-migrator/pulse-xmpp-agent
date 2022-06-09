@@ -19,14 +19,15 @@
 # along with Pulse 2; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
-
+#
 # file : pulse_xmpp_agent/lib/manage_event.py
+#
 
 import json
 from multiprocessing import TimeoutError
 import threading
 from .utils import getRandomName, call_plugin
-from sleekxmpp import jid
+from slixmpp import jid
 import logging
 
 logger = logging.getLogger()

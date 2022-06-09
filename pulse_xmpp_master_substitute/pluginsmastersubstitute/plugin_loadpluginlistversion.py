@@ -111,7 +111,7 @@ def loadPluginList(self):
     """charges les informations des plugins 'nom plugins et version' pour
     faire la comparaison avec les plugin sur les machines.
     """
-    logger.debug("Load and Verify base plugin")
+    logger.debug("Load and Verify base plugin %s "%self.dirpluginlist)
     self.plugindata = {}
     self.plugintype = {}
     for element in [
@@ -170,7 +170,9 @@ def remoteinstallPlugin(self):
 def deployPlugin(self, jid, plugin):
     content = ""
     fichierdata = {}
-    namefile = os.path.join(self.dirpluginlist, "plugin_%s.py" % plugin)
+    namefile = os.path.join(self.dirpluginlist, "plugin_%s" % plugin)
+    if not namefile.endswith(".py"):
+        namefile+=".py"
     if os.path.isfile(namefile):
         logger.debug("File plugin found %s" % namefile)
     else:
@@ -201,6 +203,9 @@ def plugin_loadpluginlistversion(self, msg, data):
     # function de rappel dans boucle de message.
     # cette function est definie dans l'instance mucbot, si on veut quel soit utiliser dans un autre plugin.
     # Show plugins information logs
+    if "updatingplugin" in  data and data['updatingplugin'] == False:
+        logger.warning("config remote agent [%s] is \"not updating plugin\"" % (msg["from"]))
+        return
     restartAgent = False
     for k, v in self.plugindata.items():
         deploy = False

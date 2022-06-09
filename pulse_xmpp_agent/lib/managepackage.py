@@ -19,7 +19,9 @@
 # along with Pulse 2; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
-
+#
+# file : pulse_xmpp_agent/lib/managepackage.py
+#
 import sys
 import os
 import os.path
@@ -90,7 +92,7 @@ class managepackage:
         else:
             sharedir = os.path.abspath(os.path.realpath(sharedir))
         for x in managepackage.search_list_package():
-            print x, os.path.join(dirpackage, os.path.basename(x))
+            print (x, os.path.join(dirpackage, os.path.basename(x)))
             try:
                 os.symlink(x, os.path.join(dirpackage, os.path.basename(x)))
             except OSError:

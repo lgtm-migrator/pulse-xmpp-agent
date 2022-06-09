@@ -20,8 +20,10 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
 #
-# file : lib/configuration.py
+# file : pulse_xmpp_agent/lib/configuration.py
 #
+
+import sys
 
 if sys.version_info[0] == 3:
     from configparser import ConfigParser
@@ -31,14 +33,12 @@ else:
     from sleekxmpp import jid
 import netifaces
 import json
-import sys
 import platform
 import os
 import logging
 from . import utils
 import random
 from .agentconffile import conffilename
-
 from .agentconffile import directoryconffile
 from .utils import ipfromdns
 import re
@@ -134,6 +134,51 @@ def alternativeclusterconnection(conffile, data):
         else:
             if os.path.isfile(conffile):
                 os.unlink(conffile)
+
+
+def nextalternativeclusterconnectioninformation(conffile):
+    """
+    This function allow to add more alternative clusters
+
+    Args:
+        conffile: the configuration file to modify
+    """
+    alternatif_conf={ }
+    logger.error("JFKJFK function nextalternativeclusterconnection")
+    if not os.path.isfile(conffile):
+        logger.error("file alternatif conf missing %s" % conffile)
+        return {}
+
+    Config = ConfigParser()
+    Config.read(conffile)
+    alternatif_conf['nextserver'] = Config.getint("alternativelist", "nextserver")
+    alternatif_conf['nbserver'] = Config.getint("alternativelist", "nbserver")
+    alternatif_conf['listars'] = [ x.strip() for x \
+        in Config.get("alternativelist", "listars").split(",") if x.strip() != ""]
+
+    if len(alternatif_conf['listars']) != alternatif_conf['nbserver']:
+        logger.error("format alternatif file %s : count list ars != nbserver" % conffile)
+        return {}
+
+    if alternatif_conf['nextserver'] > alternatif_conf['nbserver']:
+        alternatif_conf['nextserver'] = 1
+
+    # charge les informations server
+    for ars in alternatif_conf['listars']:
+        if not Config.has_section(ars):
+           logger.error("format alternatif file %s : section %s missing" % (conffile, ars))
+           return {}
+
+    for ars in alternatif_conf['listars']:
+        if not (Config.has_option(ars, "port") and Config.has_option(ars, "server") and Config.has_option(ars, "guacamole_baseurl")):
+            logger.error("format alternatif file %s : section %s farmat error" % (conffile, ars))
+            return {}
+        else:
+            alternatif_conf[ars]={}
+            alternatif_conf[ars]['port']=Config.getint(ars, 'port')
+            alternatif_conf[ars]['server']=Config.get(ars, 'server')
+            alternatif_conf[ars]['guacamole_baseurl']=Config.get(ars, 'guacamole_baseurl')
+    return alternatif_conf
 
 
 def nextalternativeclusterconnection(conffile):
@@ -292,6 +337,9 @@ class confParameter:
     def __init__(self, typeconf="machine"):
         Config = ConfigParser()
         namefileconfig = conffilename(typeconf)
+        if not os.path.isfile(namefileconfig):
+            logger.error("file missing %s" % namefileconfig)
+            logger.error('verify type "agent machine or relayserver"')
         Config.read(namefileconfig)
         if os.path.exists(namefileconfig + ".local"):
             Config.read(namefileconfig + ".local")
@@ -411,10 +459,16 @@ class confParameter:
         logger.info("moderelayserver %s" % self.moderelayserver)
 
         if Config.has_option("updateagent", "updating"):
-            self.updating = Config.getint("updateagent", "updating")
+            self.updating = Config.getboolean("updateagent", "updating")
         else:
             self.updating = 1
         logger.info("updating %s" % self.updating)
+
+        if Config.has_option("updateagent", "updatingplugin"):
+            self.updatingplugin = Config.getboolean("updateagent", "updatingplugin")
+        else:
+            self.updatingplugin = 1
+        logger.info("updating %s" % self.updatingplugin)
 
         if Config.has_option("networkstatus", "netchanging"):
             self.netchanging = Config.getint("networkstatus", "netchanging")
@@ -557,9 +611,8 @@ class confParameter:
                         setattr(self, keyparameter, valueparameter)
                 else:
                     logger.warning(
-                        "parameter File plugin %s : missing" % self.nameplugindir
+                        "load plugin %s : parameter File plugin [%s]: missing" % (z, namefile)
                     )
-                    # self.nameplugindir=""
         try:
             self.agentcommand = Config.get("global", "relayserver_agent")
         except BaseException:
@@ -703,11 +756,11 @@ class confParameter:
         except BaseException:
             self.levellog = 20
         try:
-            self.log_level_sleekxmpp = self._levellogdata(
-                Config.get("global", "log_level_sleekxmpp")
+            self.log_level_slixmpp = self._levellogdata(
+                Config.get("global", "log_level_slixmpp")
             )
         except BaseException:
-            self.log_level_sleekxmpp = 50
+            self.log_level_slixmpp = 50
 
         if Config.has_option("configuration_server", "confdomain"):
             self.confdomain = Config.get("configuration_server", "confdomain")

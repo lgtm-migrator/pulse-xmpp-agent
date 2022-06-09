@@ -20,6 +20,7 @@
 # MA 02110-1301, USA.
 #
 # file pulse_xmpp_agent/lib/manage_xmppbrowsing.py
+#
 
 import os
 import sys

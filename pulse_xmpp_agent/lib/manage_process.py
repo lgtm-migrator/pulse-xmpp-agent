@@ -19,6 +19,9 @@
 # along with Pulse 2; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA.
+#
+# file : pulse_xmpp_agent/lib/manage_process.py
+#
 
 from .utils import decode_strconsole, encode_strconsole
 import sys

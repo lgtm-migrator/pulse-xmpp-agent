@@ -30,6 +30,8 @@ import json
 import logging
 import time
 import shlex
+
+# install_key_ssh_relayserver,
 from .utils import (
     shellcommandtimeout,
     file_put_contents,
@@ -40,7 +42,6 @@ from .utils import (
     keypub,
     simplecommand,
     restartsshd,
-    install_key_ssh_relayserver,
     showlinelog,
     pulseuser_useraccount_mustexist,
     pulseuser_profile_mustexist,
