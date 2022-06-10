@@ -809,7 +809,7 @@ def applicationdeployjsonuuid(self,
                          fromuser=login)
         return False
     
-def generate_hash(path, package_id, hash_type, packages):
+def generate_hash(path, package_id, hash_type, packages, keyAES32):
     source = "/var/lib/pulse2/packages/sharing/" + path + "/" + package_id
     dest = "/var/lib/pulse2/packages/hash/" + path + "/" + package_id
     BLOCK_SIZE = 65536
@@ -833,12 +833,12 @@ def generate_hash(path, package_id, hash_type, packages):
             with open(dest + "/" + file_package + ".hash", 'w') as _file:
                 _file.write(file_hash.hexdigest())
         except:
-            print("The 'docs' directory does not exist")
+            logging.error("The 'docs' directory does not exist")
     
     #FOREACH FILES IN DEST IN ALPHA ORDER AND ADD KEY AES32, CONCAT AND HASH
     content = ""
-    if PkgsConfig("pkgs").keyAES32:
-        salt = PkgsConfig("pkgs").keyAES32
+
+    salt = keyAES32
     filelist = os.listdir(dest)
     for file_package in sorted(filelist):
         with open(dest + "/" + file_package, "rb") as infile:
@@ -1087,33 +1087,31 @@ def applicationdeploymentjson(self,
                 dest = "/var/lib/pulse2/packages/hash/" + data['descriptor']['info']['localisation_server'] + "/" + data['name']
                 
                 need_hash = False
+                counter_no_hash = 0
+                counter_hash = 0
+                
+                for file_not_hashed in dest_not_hash:
+                    counter_no_hash += 1
                 
                 if not os.path.exists(dest):
                     need_hash = True
-                    logger.info("os path exist")
                 else:
                     if len(os.listdir(dest)) == 0:
                         need_hash = True
                     else:
                         filelist = os.listdir(dest)
                         for file_package in filelist:
-                            logger.info("package list file_package")
-                            logger.info(file_package)
-                            if not os.path.exists(dest + "/" + file_package + ".hash"):
-                                logger.info("le fichier existe pas")
+                            file_package_no_hash = file_package.replace('.hash','')
+                            counter_hash += 1
+                            if os.path.getmtime(dest + "/" + file_package) < os.path.getmtime(dest_not_hash + "/" + file_package_no_hash):
                                 need_hash = True
-                            if os.path.getmtime(dest + "/" + file_package + ".hash") < os.path.getmtime(dest_not_hash + "/" + file_package + ".hash"):
-                                logger.info("tmps inf")
-                                need_hash = True
-                
-                logger.info(need_hash)
+                    if counter_hash != counter_no_hash:
+                        need_hash = True
                 
                 if need_hash == True:
-                    logger.info("CREATION DE HASH PARCE QUE EXIST PO ")
-                    generate_hash(data['descriptor']['info']['localisation_server'], data['name'], self.hashing_algo, data['packagefile'])
-                # if hash timestamp < ou exist pas timestamp origin fichier : rien sinon refaire hash (refaire une fonction genere_hash)
-                # si dans dest il manque un fichier regenerer hash sinon 
-                
+                    generate_hash(data['descriptor']['info']['localisation_server'], data['name'], self.hashing_algo, data['packagefile'], self.keyAES32)
+ 
+                content = ""
                 try:
                     with open(dest + ".hash", "rb") as infile:
                         content += infile.read()
