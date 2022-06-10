@@ -21,6 +21,7 @@
 # file  plugin_applicationdeploymentjson.py
 
 import base64
+import hashlib
 import json
 import sys, os
 import socket
@@ -721,7 +722,7 @@ def action(objectxmpp, action, sessionid, data, message, dataerreur):
                 url = url + "/"
             localisation_server = data['descriptor']['info']['localisation_server']
             token = objectxmpp.config.cdn_token
-            add_url = {"url": url, 'localisation_server': localisation_server, 'token': token}
+            add_url = {"url": url, "localisation_server": localisation_server, "token": token}
             data['descriptor']['info']['localisation_server'] = add_url
             objectxmpp.xmpplog('Transfer Method is %s' % data['methodetransfert'],
                                        type='deploy',
@@ -2420,6 +2421,39 @@ def recuperefile(datasend, objectxmpp, ippackage, portpackage, sessionid):
     signalendsessionforARS(datasend, objectxmpp, sessionid, error=False)
     return True
 
+def check_hash(objectxmpp, data, package_id):
+    globalHash = data['hash']['global']
+    hash_type = data['hash']['type']
+    concat_hash = ""
+    
+    if hasattr(objectxmpp.config, 'keyAES32'):
+        salt = objectxmpp.config.keyAES32
+    
+    BLOCK_SIZE = 65536
+
+    try:
+        file_hash = hashlib.new(hash_type)
+    except:
+        logger.error("Wrong hash type")
+    
+    for file_package in data['packagefile']:
+        not_hashed = []
+        not_hashed.append(file_package)
+        
+    for _file in sorted(not_hashed):
+        try:
+            file_hash.update(_file)
+            concat_hash += file_hash.hexdigest()
+            logger.info(_hash)
+        except:
+            print("The 'docs' directory does not exist")
+    
+    concat_hash += salt
+    file_hash.update(concat_hash)
+    concat_hash = file_hash.hexdigest()
+    
+    return concat_hash
+
 def recuperefilecdn(datasend, objectxmpp, sessionid):
     strjidagent = str(objectxmpp.boundjid.bare)
     if not os.path.isdir(datasend['data']['pathpackageonmachine']):
@@ -2469,7 +2503,8 @@ def recuperefilecdn(datasend, objectxmpp, sessionid):
                                    module="Deployment | Download | Transfer",
                                    date=None,
                                    fromuser=datasend['data']['advanced']['login'])
-                curlgetdownloadfile(dest, urlfile, insecure=True, token=token ,limit_rate_ko=limit_rate_ko)
+                if check_hash(objectxmpp, datasend['data'], datasend['data']['name']) == datasend['data']['hash']['global']:
+                    curlgetdownloadfile(dest, urlfile, insecure=True, token=token ,limit_rate_ko=limit_rate_ko)
                 changown_dir_of_file(dest)  # owner pulse or pulseuser.
             except Exception as e:
                 traceback.print_exc(file=sys.stdout)
