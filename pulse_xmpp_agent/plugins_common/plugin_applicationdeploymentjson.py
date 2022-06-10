@@ -2421,10 +2421,12 @@ def recuperefile(datasend, objectxmpp, ippackage, portpackage, sessionid):
     signalendsessionforARS(datasend, objectxmpp, sessionid, error=False)
     return True
 
-def check_hash(objectxmpp, data, package_id):
+def check_hash(objectxmpp, data):
     globalHash = data['hash']['global']
     hash_type = data['hash']['type']
     concat_hash = ""
+    
+    package_id = data['name']
     
     if hasattr(objectxmpp.config, 'keyAES32'):
         salt = objectxmpp.config.keyAES32
@@ -2503,8 +2505,8 @@ def recuperefilecdn(datasend, objectxmpp, sessionid):
                                    module="Deployment | Download | Transfer",
                                    date=None,
                                    fromuser=datasend['data']['advanced']['login'])
-                if check_hash(objectxmpp, datasend['data'], datasend['data']['name']) == datasend['data']['hash']['global']:
-                    curlgetdownloadfile(dest, urlfile, insecure=True, token=token ,limit_rate_ko=limit_rate_ko)
+                if check_hash(objectxmpp, datasend['data']) == datasend['data']['hash']['global']:
+                    curlgetdownloadfile(dest, urlfile, insecure=True, token=token, limit_rate_ko=limit_rate_ko)
                 changown_dir_of_file(dest)  # owner pulse or pulseuser.
             except Exception as e:
                 traceback.print_exc(file=sys.stdout)
