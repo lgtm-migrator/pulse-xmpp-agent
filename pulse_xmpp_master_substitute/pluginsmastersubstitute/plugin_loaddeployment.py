@@ -32,6 +32,7 @@ import os
 import sys
 import json
 import logging
+import hashlib
 from lib.plugins.xmpp import XmppMasterDatabase
 from lib.plugins.msc import MscDatabase
 from lib.managepackage import managepackage
@@ -807,6 +808,48 @@ def applicationdeployjsonuuid(self,
                          module="Deployment | Start | Creation",
                          fromuser=login)
         return False
+    
+def generate_hash(path, package_id, hash_type, packages):
+    source = "/var/lib/pulse2/packages/sharing/" + path + "/" + package_id
+    dest = "/var/lib/pulse2/packages/hash/" + path + "/" + package_id
+    BLOCK_SIZE = 65536
+
+    try:
+        file_hash = hashlib.new(hash_type)
+    except:
+        logging.error("Wrong hash type")
+
+    if not os.path.exists(dest):
+        os.makedirs(dest)
+    
+    for file_package in packages:
+        with open(source + "/" + file_package, "rb") as _file:
+            file_block = _file.read(BLOCK_SIZE) # Read from the file. Take in the amount declared above
+            while len(file_block) > 0: # While there is still data being read from the file
+                file_hash.update(file_block) # Update the hash
+                file_block = _file.read(BLOCK_SIZE) # Read the next block from the file
+            
+        try:
+            with open(dest + "/" + file_package + ".hash", 'w') as _file:
+                _file.write(file_hash.hexdigest())
+        except:
+            print("The 'docs' directory does not exist")
+    
+    #FOREACH FILES IN DEST IN ALPHA ORDER AND ADD KEY AES32, CONCAT AND HASH
+    content = ""
+    if PkgsConfig("pkgs").keyAES32:
+        salt = PkgsConfig("pkgs").keyAES32
+    filelist = os.listdir(dest)
+    for file_package in sorted(filelist):
+        with open(dest + "/" + file_package, "rb") as infile:
+            content += infile.read()
+    
+    content += salt
+    file_hash.update(content)
+    content = file_hash.hexdigest()
+    
+    with open(dest + ".hash", 'w') as outfile:
+        outfile.write(content)
 
 def applicationdeploymentjson(self,
                               jidrelay,
@@ -1038,12 +1081,59 @@ def applicationdeploymentjson(self,
 
             data['advanced']['syncthing'] = 0
             result = None
-            sessionid = self.send_session_command(jidrelay,
+            
+            if self.send_hash:
+                dest_not_hash = "/var/lib/pulse2/packages/sharing/" + data['descriptor']['info']['localisation_server'] + "/" + data['name']
+                dest = "/var/lib/pulse2/packages/hash/" + data['descriptor']['info']['localisation_server'] + "/" + data['name']
+                
+                need_hash = False
+                
+                if not os.path.exists(dest):
+                    need_hash = True
+                    logger.info("os path exist")
+                else:
+                    if len(os.listdir(dest)) == 0:
+                        need_hash = True
+                    else:
+                        filelist = os.listdir(dest)
+                        for file_package in filelist:
+                            logger.info("package list file_package")
+                            logger.info(file_package)
+                            if not os.path.exists(dest + "/" + file_package + ".hash"):
+                                logger.info("le fichier existe pas")
+                                need_hash = True
+                            if os.path.getmtime(dest + "/" + file_package + ".hash") < os.path.getmtime(dest_not_hash + "/" + file_package + ".hash"):
+                                logger.info("tmps inf")
+                                need_hash = True
+                
+                logger.info(need_hash)
+                
+                if need_hash == True:
+                    logger.info("CREATION DE HASH PARCE QUE EXIST PO ")
+                    generate_hash(data['descriptor']['info']['localisation_server'], data['name'], self.hashing_algo, data['packagefile'])
+                # if hash timestamp < ou exist pas timestamp origin fichier : rien sinon refaire hash (refaire une fonction genere_hash)
+                # si dans dest il manque un fichier regenerer hash sinon 
+                
+                try:
+                    with open(dest + ".hash", "rb") as infile:
+                        content += infile.read()
+                        data['hash'] = {}
+                        data['hash']['global'] = content
+                        data['hash']['type'] = self.hashing_algo
+                    
+                    sessionid = self.send_session_command(jidrelay,
                                                   "applicationdeploymentjson",
                                                   data,
                                                   datasession=None,
                                                   encodebase64=False,
                                                   prefix="command")
+                except IOError:
+                    logger.error("Pulse is configured to check integrity of packages but the hashes have not been generated")
+                    msg.append("<span class='log_err'>Pulse is configured to check integrity of packages but the hashes have not been generated</span>")
+                    sessiondeployementless = name_random(5, "hashmissing")
+                    sessionid = sessiondeployementless
+                    state = 'ERROR HASH MISSING'
+            
     if wol >= 1:
         advancedparameter_syncthing = 0
     else:
@@ -1263,6 +1353,8 @@ def read_conf_loaddeployment(objectxmpp):
         objectxmpp.recover_glpi_identifier_from_name = False
         objectxmpp.force_redeploy = 1
         objectxmpp.reschedule = 0
+        objectxmpp.send_hash = False
+        objectxmpp.hashing_algo = "sha256"
     else:
         Config = ConfigParser.ConfigParser()
         Config.read(pathfileconf)
@@ -1309,6 +1401,16 @@ def read_conf_loaddeployment(objectxmpp):
             objectxmpp.reschedule =  Config.getboolean('parameters', 'reschedule')
         else:
             objectxmpp.reschedule = 0
+            
+        if Config.has_option("parameters", "send_hash"):
+            objectxmpp.send_hash =  Config.getboolean('parameters', 'send_hash')
+        else:
+            objectxmpp.send_hash = False
+            
+        if Config.has_option("parameters", "hashing_algo"):
+            objectxmpp.hashing_algo =  Config.get('parameters', 'hashing_algo')
+        else:
+            objectxmpp.hashing_algo = "sha256"
 
     # initialisation des object for deployement
 
