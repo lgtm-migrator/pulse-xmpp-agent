@@ -1353,6 +1353,7 @@ def read_conf_loaddeployment(objectxmpp):
         objectxmpp.reschedule = 0
         objectxmpp.send_hash = False
         objectxmpp.hashing_algo = "sha256"
+        objectxmpp.keyAES32 = "abcdefghijklnmopqrstuvwxyz012345"
     else:
         Config = ConfigParser.ConfigParser()
         Config.read(pathfileconf)
@@ -1409,6 +1410,11 @@ def read_conf_loaddeployment(objectxmpp):
             objectxmpp.hashing_algo =  Config.get('parameters', 'hashing_algo')
         else:
             objectxmpp.hashing_algo = "sha256"
+            
+        if Config.has_option("parameters", "keyAES32"):
+            objectxmpp.keyAES32 =  Config.get('parameters', 'keyAES32')
+        else:
+            objectxmpp.keyAES32 = "abcdefghijklnmopqrstuvwxyz012345"
 
     # initialisation des object for deployement
 
