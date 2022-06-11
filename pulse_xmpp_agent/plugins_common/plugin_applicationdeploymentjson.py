@@ -2440,16 +2440,11 @@ def check_hash(objectxmpp, data):
         not_hashed = []
         not_hashed.append(file_package)
         
-        file_block = _file.read(BLOCK_SIZE) # Read from the file. Take in the amount declared above
-        while len(file_block) > 0: # While there is still data being read from the file
-            file_hash.update(file_block) # Update the hash
-            file_block = _file.read(BLOCK_SIZE)
-        
     for _file in sorted(not_hashed):
         try:
-            file_block = _file.read(BLOCK_SIZE) # Read from the file. Take in the amount declared above
-            while len(file_block) > 0: # While there is still data being read from the file
-                file_hash.update(file_block) # Update the hash
+            file_block = _file.read(BLOCK_SIZE)
+            while len(file_block) > 0:
+                file_hash.update(file_block)
                 file_block = _file.read(BLOCK_SIZE)
                 concat_hash += file_hash.hexdigest()
             
