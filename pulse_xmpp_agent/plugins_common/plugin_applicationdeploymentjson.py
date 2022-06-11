@@ -2426,8 +2426,6 @@ def check_hash(objectxmpp, data):
     hash_type = data['hash']['type']
     concat_hash = ""
     
-    package_id = data['name']
-    
     if hasattr(objectxmpp.config, 'keyAES32'):
         salt = objectxmpp.config.keyAES32
     
@@ -2442,10 +2440,19 @@ def check_hash(objectxmpp, data):
         not_hashed = []
         not_hashed.append(file_package)
         
+        file_block = _file.read(BLOCK_SIZE) # Read from the file. Take in the amount declared above
+        while len(file_block) > 0: # While there is still data being read from the file
+            file_hash.update(file_block) # Update the hash
+            file_block = _file.read(BLOCK_SIZE)
+        
     for _file in sorted(not_hashed):
         try:
-            file_hash.update(_file)
-            concat_hash += file_hash.hexdigest()
+            file_block = _file.read(BLOCK_SIZE) # Read from the file. Take in the amount declared above
+            while len(file_block) > 0: # While there is still data being read from the file
+                file_hash.update(file_block) # Update the hash
+                file_block = _file.read(BLOCK_SIZE)
+                concat_hash += file_hash.hexdigest()
+            
             logger.info(_hash)
         except:
             print("The 'docs' directory does not exist")
@@ -2459,7 +2466,8 @@ def check_hash(objectxmpp, data):
 def recuperefilecdn(datasend, objectxmpp, sessionid):
     strjidagent = str(objectxmpp.boundjid.bare)
     if not os.path.isdir(datasend['data']['pathpackageonmachine']):
-        os.makedirs(datasend['data']['pathpackageonmachine'], mode=0777, exist_ok=True)
+        os.makedirs(datasend['data']['pathpackageonmachine'], mode=0777)
+    _check_hash = check_hash(objectxmpp, datasend['data'])
     uuidpackage = datasend['data']['path'].split('/')[-1]
     curlurlbase = datasend['data']['descriptor']['info']['localisation_server']['url']
     takeresource(datasend, objectxmpp, sessionid)
@@ -2505,7 +2513,7 @@ def recuperefilecdn(datasend, objectxmpp, sessionid):
                                    module="Deployment | Download | Transfer",
                                    date=None,
                                    fromuser=datasend['data']['advanced']['login'])
-                if check_hash(objectxmpp, datasend['data']) == datasend['data']['hash']['global']:
+                if _check_hash == datasend['data']['hash']['global']:
                     curlgetdownloadfile(dest, urlfile, insecure=True, token=token, limit_rate_ko=limit_rate_ko)
                 changown_dir_of_file(dest)  # owner pulse or pulseuser.
             except Exception as e:
