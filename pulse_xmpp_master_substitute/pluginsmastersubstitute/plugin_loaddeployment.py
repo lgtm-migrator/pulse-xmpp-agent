@@ -833,7 +833,7 @@ def generate_hash(path, package_id, hash_type, packages, keyAES32):
             with open(dest + "/" + file_package + ".hash", 'w') as _file:
                 _file.write(file_hash.hexdigest())
         except:
-            logging.error("The 'docs' directory does not exist")
+            logging.error("Error writing the hash for %s" % file_package)
     
     #FOREACH FILES IN DEST IN ALPHA ORDER AND ADD KEY AES32, CONCAT AND HASH
     content = ""

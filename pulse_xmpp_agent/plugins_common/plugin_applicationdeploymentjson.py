@@ -2450,7 +2450,7 @@ def check_hash(objectxmpp, data):
             
             logger.info(_hash)
         except:
-            print("The 'docs' directory does not exist")
+            logger.error("Error reading the hash for %s" % _file)
     
     concat_hash += salt
     file_hash.update(concat_hash)
