@@ -2424,6 +2424,7 @@ def recuperefile(datasend, objectxmpp, ippackage, portpackage, sessionid):
 def check_hash(objectxmpp, data):
     globalHash = data['hash']['global']
     hash_type = data['hash']['type']
+    dest = "C:\\Program Files\\Pulse\\var\\tmp\\packages\\"
     concat_hash = ""
     
     if hasattr(objectxmpp.config, 'keyAES32'):
@@ -2435,18 +2436,17 @@ def check_hash(objectxmpp, data):
         file_hash = hashlib.new(hash_type)
     except:
         logger.error("Wrong hash type")
-    
-    for file_package in data['packagefile']:
-        not_hashed = []
-        not_hashed.append(file_package)
+
+    dest_file = os.listdir(dest)
         
-    for _file in sorted(not_hashed):
+    for _file in sorted(dest_file):
         try:
             file_block = _file.read(BLOCK_SIZE)
             while len(file_block) > 0:
                 file_hash.update(file_block)
                 file_block = _file.read(BLOCK_SIZE)
-                concat_hash += file_hash.hexdigest()
+                
+            concat_hash += file_hash.hexdigest()
             
             logger.info(_hash)
         except:
@@ -2462,7 +2462,7 @@ def recuperefilecdn(datasend, objectxmpp, sessionid):
     strjidagent = str(objectxmpp.boundjid.bare)
     if not os.path.isdir(datasend['data']['pathpackageonmachine']):
         os.makedirs(datasend['data']['pathpackageonmachine'], mode=0777)
-    _check_hash = check_hash(objectxmpp, datasend['data'])
+    
     uuidpackage = datasend['data']['path'].split('/')[-1]
     curlurlbase = datasend['data']['descriptor']['info']['localisation_server']['url']
     takeresource(datasend, objectxmpp, sessionid)
@@ -2508,8 +2508,12 @@ def recuperefilecdn(datasend, objectxmpp, sessionid):
                                    module="Deployment | Download | Transfer",
                                    date=None,
                                    fromuser=datasend['data']['advanced']['login'])
-                if _check_hash == datasend['data']['hash']['global']:
-                    curlgetdownloadfile(dest, urlfile, insecure=True, token=token, limit_rate_ko=limit_rate_ko)
+                
+                curlgetdownloadfile(dest, urlfile, insecure=True, token=token, limit_rate_ko=limit_rate_ko)
+                _check_hash = check_hash(objectxmpp, datasend['data'])
+                if _check_hash != datasend['data']['hash']['global']:
+                    shutil.rmtree("C:\\Program Files\\Pulse\\var\\tmp\\packages\\"+datasend['data']['name'])
+
                 changown_dir_of_file(dest)  # owner pulse or pulseuser.
             except Exception as e:
                 traceback.print_exc(file=sys.stdout)
