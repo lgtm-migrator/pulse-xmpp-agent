@@ -3274,7 +3274,7 @@ AGENT %s ERROR TERMINATE""" % (
             "uuid_serial_machine": serialnumbermachine(),
             "updatingplugin": self.config.updatingplugin,
             "updatingagent": self.config.updating,
-                "system_info" : search_system_info_reg(),
+            "system_info" : search_system_info_reg(),
         }
         try:
             dataobj["md5_conf_monitoring"] = ""

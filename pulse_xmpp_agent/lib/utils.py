@@ -545,7 +545,7 @@ def search_system_info_reg():
                 lcmd = [ x for x in t.split (" ") if x != ""]
                 if len(lcmd) >= 3:
                     result_cmd[lcmd[0]] = lcmd[2]
-    logging.getLogger().debug("infor version update %s" % result_cmd)
+    logging.getLogger().debug("info version update %s" % result_cmd)
     return result_cmd
 
 def getRandomName(nb, pref=""):
