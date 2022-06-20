@@ -2431,7 +2431,7 @@ def check_hash(objectxmpp, data):
     if hasattr(objectxmpp.config, 'keyAES32'):
         salt = objectxmpp.config.keyAES32
     
-    BLOCK_SIZE = 65536
+    BLOCK_SIZE = 65535
 
     try:
         file_hash = hashlib.new(hash_type)
