@@ -29,6 +29,7 @@ import logging
 import pycurl
 import platform
 import urllib
+import shutil
 from urlparse import urlparse
 from lib import utils, \
                 managepackage, \
