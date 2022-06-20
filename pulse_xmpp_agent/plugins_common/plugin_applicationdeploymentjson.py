@@ -2511,10 +2511,6 @@ def recuperefilecdn(datasend, objectxmpp, sessionid):
                                    fromuser=datasend['data']['advanced']['login'])
                 
                 curlgetdownloadfile(dest, urlfile, insecure=True, token=token, limit_rate_ko=limit_rate_ko)
-                _check_hash = check_hash(objectxmpp, datasend['data'])
-                if _check_hash != datasend['data']['hash']['global']:
-                    shutil.rmtree("C:\\Program Files\\Pulse\\var\\tmp\\packages\\"+datasend['data']['name'])
-
                 changown_dir_of_file(dest)  # owner pulse or pulseuser.
             except Exception as e:
                 traceback.print_exc(file=sys.stdout)
@@ -2540,6 +2536,9 @@ def recuperefilecdn(datasend, objectxmpp, sessionid):
                 removeresource(datasend, objectxmpp, sessionid)
                 signalendsessionforARS(datasend, objectxmpp, sessionid, error=True)
                 return False
+    _check_hash = check_hash(objectxmpp, datasend['data'])
+    if _check_hash != datasend['data']['hash']['global']:
+        shutil.rmtree("C:\\Program Files\\Pulse\\var\\tmp\\packages\\"+datasend['data']['name'])
     removeresource(datasend, objectxmpp, sessionid)
     signalendsessionforARS(datasend, objectxmpp, sessionid, error=False)
     return True
