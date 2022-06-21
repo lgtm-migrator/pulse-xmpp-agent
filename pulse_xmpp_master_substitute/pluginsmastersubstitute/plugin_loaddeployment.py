@@ -824,13 +824,17 @@ def generate_hash(path, package_id, hash_type, packages, keyAES32):
     
     for file_package in packages:
         with open(source + "/" + file_package, "rb") as _file:
+            try:
+                file_hash = hashlib.new(hash_type)
+            except:
+                logging.error("Wrong hash type")
             file_block = _file.read(BLOCK_SIZE) # Read from the file. Take in the amount declared above
             while len(file_block) > 0: # While there is still data being read from the file
                 file_hash.update(file_block) # Update the hash
                 file_block = _file.read(BLOCK_SIZE) # Read the next block from the file
             
         try:
-            with open(dest + "/" + file_package + ".hash", 'w') as _file:
+            with open(dest + "/" + file_package + ".hash", 'wb') as _file:
                 _file.write(file_hash.hexdigest())
         except:
             logging.error("Error writing the hash for %s" % file_package)
@@ -845,10 +849,14 @@ def generate_hash(path, package_id, hash_type, packages, keyAES32):
             content += infile.read()
     
     content += salt
+    try:
+        file_hash = hashlib.new(hash_type)
+    except:
+        logging.error("Wrong hash type")
     file_hash.update(content)
     content = file_hash.hexdigest()
     
-    with open(dest + ".hash", 'w') as outfile:
+    with open(dest + ".hash", 'wb') as outfile:
         outfile.write(content)
 
 def applicationdeploymentjson(self,
