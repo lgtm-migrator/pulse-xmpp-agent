@@ -812,7 +812,7 @@ def applicationdeployjsonuuid(self,
 def generate_hash(path, package_id, hash_type, packages, keyAES32):
     source = "/var/lib/pulse2/packages/sharing/" + path + "/" + package_id
     dest = "/var/lib/pulse2/packages/hash/" + path + "/" + package_id
-    BLOCK_SIZE = 65536
+    BLOCK_SIZE = 65535
 
     try:
         file_hash = hashlib.new(hash_type)
