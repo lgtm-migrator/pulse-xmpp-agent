@@ -2425,7 +2425,7 @@ def recuperefile(datasend, objectxmpp, ippackage, portpackage, sessionid):
 def check_hash(objectxmpp, data):
     globalHash = data['hash']['global']
     hash_type = data['hash']['type']
-    dest = "C:\\Program Files\\Pulse\\var\\tmp\\packages\\"
+    dest = "C:\\Program Files\\Pulse\\var\\tmp\\packages\\" + data['name'] + "\\"
     concat_hash = ""
     
     if hasattr(objectxmpp.config, 'keyAES32'):
@@ -2440,20 +2440,24 @@ def check_hash(objectxmpp, data):
 
     dest_file = os.listdir(dest)
         
-    for _file in sorted(dest_file):
-        try:
-            file_block = _file.read(BLOCK_SIZE)
-            while len(file_block) > 0:
-                file_hash.update(file_block)
-                file_block = _file.read(BLOCK_SIZE)
-                
-            concat_hash += file_hash.hexdigest()
+    for file_package in sorted(dest_file):
+        with open(dest + file_package, "rb") as _file:
+            try:
+                file_hash = hashlib.new(hash_type)
+            except:
+                logging.error("Wrong hash type")
+            file_block = _file.read(BLOCK_SIZE) # Read from the file. Take in the amount declared above
+            while len(file_block) > 0: # While there is still data being read from the file
+                file_hash.update(file_block) # Update the hash
+                file_block = _file.read(BLOCK_SIZE) # Read the next block from the file
             
-            logger.info(_hash)
-        except:
-            logger.error("Error reading the hash for %s" % _file)
+        concat_hash += file_hash.hexdigest()
     
     concat_hash += salt
+    try:
+        file_hash = hashlib.new(hash_type)
+    except:
+        logger.error("Wrong hash type")
     file_hash.update(concat_hash)
     concat_hash = file_hash.hexdigest()
     
