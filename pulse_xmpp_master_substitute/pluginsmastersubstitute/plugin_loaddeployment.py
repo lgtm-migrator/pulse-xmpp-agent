@@ -81,7 +81,7 @@ def scheduledeploy(self):
     # TODO
     # If 1 package is in pending state, then the limit rate is removed.
     ###########################################################################
-    
+
     nb_machine_select_for_deploy_cycle = 0
     datetimenow = datetime.datetime.now()
     startfunc = time.time()
@@ -808,7 +808,7 @@ def applicationdeployjsonuuid(self,
                          module="Deployment | Start | Creation",
                          fromuser=login)
         return False
-    
+
 def generate_hash(path, package_id, hash_type, packages, keyAES32):
     source = "/var/lib/pulse2/packages/sharing/" + path + "/" + package_id
     dest = "/var/lib/pulse2/packages/hash/" + path + "/" + package_id
@@ -821,9 +821,9 @@ def generate_hash(path, package_id, hash_type, packages, keyAES32):
 
     if not os.path.exists(dest):
         os.makedirs(dest)
-        
+
     source_file = os.listdir(source)
-    
+
     for file_package in sorted(source_file):
         with open(os.path.join(source, file_packag), "rb") as _file:
             try:
@@ -834,13 +834,13 @@ def generate_hash(path, package_id, hash_type, packages, keyAES32):
             while len(file_block) > 0: # While there is still data being read from the file
                 file_hash.update(file_block) # Update the hash
                 file_block = _file.read(BLOCK_SIZE) # Read the next block from the file
-            
+
         try:
             with open("%s.hash" % (os.path.join(dest, file_package)) + ".hash", 'wb') as _file:
                 _file.write(file_hash.hexdigest())
         except:
             logging.error("Error writing the hash for %s" % file_package)
-    
+
     #FOREACH FILES IN DEST IN ALPHA ORDER AND ADD KEY AES32, CONCAT AND HASH
     content = ""
 
@@ -849,7 +849,7 @@ def generate_hash(path, package_id, hash_type, packages, keyAES32):
     for file_package in sorted(filelist):
         with open(os.path.join(dest, file_package), "rb") as infile:
             content += infile.read()
-    
+
     content += salt
     try:
         file_hash = hashlib.new(hash_type)
@@ -857,7 +857,7 @@ def generate_hash(path, package_id, hash_type, packages, keyAES32):
         logging.error("Wrong hash type")
     file_hash.update(content)
     content = file_hash.hexdigest()
-    
+
     with open("%s.hash" % dest, 'wb') as outfile:
         outfile.write(content)
 
@@ -1091,18 +1091,18 @@ def applicationdeploymentjson(self,
 
             data['advanced']['syncthing'] = 0
             result = None
-            
+
             if self.send_hash:
                 dest_not_hash = "/var/lib/pulse2/packages/sharing/" + data['descriptor']['info']['localisation_server'] + "/" + data['name']
                 dest = "/var/lib/pulse2/packages/hash/" + data['descriptor']['info']['localisation_server'] + "/" + data['name']
-                
+
                 need_hash = False
                 counter_no_hash = 0
                 counter_hash = 0
-                
+
                 for file_not_hashed in dest_not_hash:
                     counter_no_hash += 1
-                
+
                 if not os.path.exists(dest):
                     need_hash = True
                 else:
@@ -1117,10 +1117,10 @@ def applicationdeploymentjson(self,
                                 need_hash = True
                     if counter_hash != counter_no_hash:
                         need_hash = True
-                
+
                 if need_hash == True:
                     generate_hash(data['descriptor']['info']['localisation_server'], data['name'], self.hashing_algo, data['packagefile'], self.keyAES32)
- 
+
                 content = ""
                 try:
                     with open(dest + ".hash", "rb") as infile:
@@ -1128,7 +1128,7 @@ def applicationdeploymentjson(self,
                         data['hash'] = {}
                         data['hash']['global'] = content
                         data['hash']['type'] = self.hashing_algo
-                    
+
                     sessionid = self.send_session_command(jidrelay,
                                                   "applicationdeploymentjson",
                                                   data,
@@ -1141,7 +1141,7 @@ def applicationdeploymentjson(self,
                     sessiondeployementless = name_random(5, "hashmissing")
                     sessionid = sessiondeployementless
                     state = 'ERROR HASH MISSING'
-            
+
     if wol >= 1:
         advancedparameter_syncthing = 0
     else:
@@ -1410,17 +1410,17 @@ def read_conf_loaddeployment(objectxmpp):
             objectxmpp.reschedule =  Config.getboolean('parameters', 'reschedule')
         else:
             objectxmpp.reschedule = 0
-            
+
         if Config.has_option("parameters", "send_hash"):
             objectxmpp.send_hash =  Config.getboolean('parameters', 'send_hash')
         else:
             objectxmpp.send_hash = False
-            
+
         if Config.has_option("parameters", "hashing_algo"):
             objectxmpp.hashing_algo =  Config.get('parameters', 'hashing_algo')
         else:
             objectxmpp.hashing_algo = "sha256"
-            
+
         if Config.has_option("parameters", "keyAES32"):
             objectxmpp.keyAES32 =  Config.get('parameters', 'keyAES32')
         else:
