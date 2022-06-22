@@ -2543,7 +2543,7 @@ def recuperefilecdn(datasend, objectxmpp, sessionid):
                 return False
     _check_hash = check_hash(objectxmpp, datasend['data'])
     if _check_hash != datasend['data']['hash']['global']:
-        shutil.rmtree("C:\\Program Files\\Pulse\\var\\tmp\\packages\\"+datasend['data']['name'])
+        shutil.rmtree(os.path.join(os.environ["ProgramFiles"], "Pulse", "var", "tmp", "packages", datasend['data']['name']))
     removeresource(datasend, objectxmpp, sessionid)
     signalendsessionforARS(datasend, objectxmpp, sessionid, error=False)
     return True
