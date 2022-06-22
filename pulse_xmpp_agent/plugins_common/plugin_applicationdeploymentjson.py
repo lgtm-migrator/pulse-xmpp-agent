@@ -45,7 +45,7 @@ if sys.platform.startswith('linux') or sys.platform.startswith('darwin'):
 elif sys.platform.startswith('win'):
     import win32net
 
-plugin = {"VERSION": "5.25", "NAME": "applicationdeploymentjson", "VERSIONAGENT": "2.0.0", "TYPE": "all"}
+plugin = {"VERSION": "5.26", "NAME": "applicationdeploymentjson", "VERSIONAGENT": "2.0.0", "TYPE": "all"}
 
 Globaldata = {'port_local': 22}
 logger = logging.getLogger()
@@ -2218,7 +2218,7 @@ def curlgetdownloadfile(destfile, urlfile, insecure=True, token=None, limit_rate
     # can write response body to it without decoding.
     with open(destfile, 'wb') as f:
         if token is not None:
-            headers = ["X-Authorization: "+token]
+            headers = ["X-Authorization: " + token]
         c = pycurl.Curl()
         urlfile = urlfile.replace(" ", "%20")
         c.setopt(c.URL, urlfile)
@@ -2425,7 +2425,8 @@ def recuperefile(datasend, objectxmpp, ippackage, portpackage, sessionid):
 def check_hash(objectxmpp, data):
     globalHash = data['hash']['global']
     hash_type = data['hash']['type']
-    dest = "C:\\Program Files\\Pulse\\var\\tmp\\packages\\" + data['name'] + "\\"
+    dest = os.path.join(os.environ["ProgramFiles"], "Pulse", "var", "tmp", "packages", data['name'])
+    dest += "\\"
     concat_hash = ""
     
     if hasattr(objectxmpp.config, 'keyAES32'):
@@ -2441,7 +2442,7 @@ def check_hash(objectxmpp, data):
     dest_file = os.listdir(dest)
         
     for file_package in sorted(dest_file):
-        with open(dest + file_package, "rb") as _file:
+        with open(os.path.join(dest, file_package), "rb") as _file:
             try:
                 file_hash = hashlib.new(hash_type)
             except:
