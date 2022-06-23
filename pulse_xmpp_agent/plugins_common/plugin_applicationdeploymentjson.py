@@ -2544,6 +2544,19 @@ def recuperefilecdn(datasend, objectxmpp, sessionid):
     _check_hash = check_hash(objectxmpp, datasend['data'])
     if _check_hash != datasend['data']['hash']['global']:
         shutil.rmtree(os.path.join(os.environ["ProgramFiles"], "Pulse", "var", "tmp", "packages", datasend['data']['name']))
+        logger.error("HASH INVALID - ABORT DEPLOYMENT")
+        objectxmpp.xmpplog('Package delayed : hash invalid',
+            type='deploy',
+            sessionname=datasend['sessionid'],
+            priority=-1,
+            action="xmpplog",
+            who=strjidagent,
+            module="Deployment | Error | Terminate | Notify",
+            date=None,
+            fromuser=datasend['data']['name'])
+        removeresource(datasend, objectxmpp, sessionid)
+        signalendsessionforARS(datasend, objectxmpp, sessionid, error=True)
+        return False
     removeresource(datasend, objectxmpp, sessionid)
     signalendsessionforARS(datasend, objectxmpp, sessionid, error=False)
     return True
