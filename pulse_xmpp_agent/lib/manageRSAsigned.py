@@ -21,14 +21,17 @@
 #
 # file pulse_xmpp_agent_git/lib/manageRSAsigned.py
 #
+import crypto
 
-from Crypto.PublicKey import RSA
-from Crypto.Util import randpool
+#from Crypto.PublicKey import RSA
+#from Crypto.Util import randpool
 import pickle
 import os
 import base64
 from lib.utils import file_get_contents
+import logging
 
+logger = logging.getLogger()
 
 class MsgsignedRSA:
     """
@@ -92,6 +95,8 @@ class MsgsignedRSA:
             f = open(self.fileallkey, "rb")
             self.allkey = pickle.load(f)
             f.close()
+            return self.allkey
+        return ""
 
     def loadkeypublic(self):
         """
@@ -99,8 +104,9 @@ class MsgsignedRSA:
         """
         if os.path.exists(self.filekeypublic):
             f = open(self.filekeypublic, "rb")
-            self.allkey = pickle.load(f)
+            self.publickey = pickle.load(f)
             f.close()
+
 
     def loadkeyalltostr(self):
         """
@@ -130,8 +136,7 @@ class MsgsignedRSA:
         """
         Function load from file the public keys RSA as a base64 string
         """
-        if os.path.exists(self.filekeypublic):
-            return base64.b64encode(file_get_contents(self.filekeypublic))
+        return base64.b64encode(self.loadkeypublic().exportKey( format='OpenSSH'))
         return ""
 
     def keypublictostr(self):
