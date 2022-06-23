@@ -866,7 +866,6 @@ def isprogramme(name):
 
 
 def simplecommand(cmd, strimresult=False):
-    cmd = encode_strconsole(cmd)
     obj = {"code": -1, "result": ""}
     p = subprocess.Popen(
         cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
