@@ -1342,7 +1342,7 @@ def read_conf_loaddeployment(objectxmpp):
 
     # We need to add and check some deployment rules.
     rules = {
-            "ABORT HASH INVALID": [".*hashes is invalid.*", "ABORT HASH INVALID", "aborthashinvalid"],
+            "ABORT HASH INVALID": [".*hash invalid.*", "ABORT HASH INVALID", "aborthashinvalid"],
             "ERROR HASH MISSING":[".*hashes have not been generated.*", "ERROR HASH MISSING", "errorhashmissing"]
     }
     XmppMasterDatabase().check_hash_rules(rules)
