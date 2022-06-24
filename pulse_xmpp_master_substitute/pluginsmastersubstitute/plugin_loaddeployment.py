@@ -825,7 +825,7 @@ def generate_hash(path, package_id, hash_type, packages, keyAES32):
     source_file = os.listdir(source)
     
     for file_package in sorted(source_file):
-        with open(os.path.join(source, file_packag), "rb") as _file:
+        with open(os.path.join(source, file_package), "rb") as _file:
             try:
                 file_hash = hashlib.new(hash_type)
             except:
