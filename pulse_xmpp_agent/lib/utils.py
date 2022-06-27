@@ -3489,8 +3489,8 @@ def serialnumbermachine():
         if sys.platform.startswith("win"):
             result = simplecommand("wmic csproduct get uuid")
             if result["code"] == 0 and result["result"]:
-                a = [x.strip().decode("utf-8", "ignore") for x in result["result"]]
-                serial_uuid_machine = "".join(a).replace("UUID", "").strip()
+                #a = [x.strip().decode("utf-8", "ignore") for x in result["result"]]
+                serial_uuid_machine = "".join(result["result"]).replace("UUID", "").strip()
         elif sys.platform.startswith("linux"):
             result = simplecommand("dmidecode -s system-uuid")
             if result["code"] == 0 and result["result"]:
