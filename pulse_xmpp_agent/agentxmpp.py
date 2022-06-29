@@ -92,9 +92,10 @@ from lib.utils import (
     serialnumbermachine,
     file_put_contents_w_a,
     os_version,
-    base_message_queue_posix,
-    file_message_iq,
 )
+
+    #base_message_queue_posix,
+    #file_message_iq,
 from lib.manage_xmppbrowsing import xmppbrowsing
 from lib.manage_event import manage_event
 from lib.manage_process import mannageprocess, process_on_end_send_message_xmpp
@@ -251,7 +252,7 @@ class MUCBot(slixmpp.ClientXMPP):
     ):
         logger.info("Init agant")
         logging.log(DEBUGPULSE, "start %s agent   %s" % (conf.agenttype, conf.jidagent))
-        self.iq_msg = file_message_iq(dev_mod=True)
+        #self.iq_msg = file_message_iq(dev_mod=True)
         self.pidprogrammprincipal = pidprogrammprincipal
 
         # create mutex
@@ -748,7 +749,7 @@ class MUCBot(slixmpp.ClientXMPP):
             )
         )
 
-        base_message_queue_posix().clean_file_all_message(prefixe=self.boundjid.user)
+        #base_message_queue_posix().clean_file_all_message(prefixe=self.boundjid.user)
 
         if self.config.agenttype in ["relayserver"]:
             from lib.manage_info_command import manage_infoconsole
@@ -1279,6 +1280,46 @@ class MUCBot(slixmpp.ClientXMPP):
         except IqTimeout as e:
             logging.error("No response from server.")
             self.disconnect(wait=10)
+
+    async def register(self, iq):
+        """
+        Fill out and submit a registration form.
+
+        The form may be composed of basic registration fields, a data form,
+        an out-of-band link, or any combination thereof. Data forms and OOB
+        links can be checked for as so:
+
+        if iq.match('iq/register/form'):
+            # do stuff with data form
+            # iq['register']['form']['fields']
+        if iq.match('iq/register/oob'):
+            # do stuff with OOB URL
+            # iq['register']['oob']['url']
+
+        To get the list of basic registration fields, you can use:
+            iq['register']['fields']
+        """
+        try:
+            self.dede
+            return
+        except:
+            self.dede=1
+
+        resp = self.Iq()
+        resp['type'] = 'set'
+        resp['register']['username'] = self.boundjid.user
+        resp['register']['password'] = self.password
+
+        try:
+            await resp.send()
+            logging.info("Account created for %s!" % self.boundjid)
+        except IqError as e:
+            logging.error("Could not register account: %s" %
+                    e.iq['error']['text'])
+            self.disconnect()
+        except IqTimeout:
+            logging.error("No response from server.")
+            self.disconnect()
 
     # async def register(self, iq):
     # logging.info("register user %s" % self.boundjid)
@@ -2475,9 +2516,9 @@ class MUCBot(slixmpp.ClientXMPP):
 
     async def start(self, event):
         logger.debug("function start")
-        mg = base_message_queue_posix()
-        mg.load_file(self.boundjid.user)
-        mg.clean_file_all_message(prefixe=self.boundjid.user)
+        #mg = base_message_queue_posix()
+        #mg.load_file(self.boundjid.user)
+        #mg.clean_file_all_message(prefixe=self.boundjid.user)
 
         self.datas_send = []
         await self.get_roster()
