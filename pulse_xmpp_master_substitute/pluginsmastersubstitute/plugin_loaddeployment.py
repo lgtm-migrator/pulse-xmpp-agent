@@ -1351,6 +1351,8 @@ def createsessionfordeploydiffered(self, data):
 def read_conf_loaddeployment(objectxmpp):
     # dictionary used for deploy
 
+    objectxmpp.mutexdeploy = threading.Lock()
+    objectxmpp.hastable = {}
     objectxmpp.wolglobal_set = set()  # use group wol
     #clean old folder session
     foldersession = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..', "sessiondeploysubstitute"))
