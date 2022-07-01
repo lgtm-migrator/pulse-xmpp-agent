@@ -45,6 +45,7 @@ import random
 import re
 from sleekxmpp import jid
 import time
+import threading
 
 logger = logging.getLogger()
 
@@ -1093,34 +1094,44 @@ def applicationdeploymentjson(self,
             result = None
             
             if self.send_hash:
-                dest_not_hash = "/var/lib/pulse2/packages/sharing/" + data['descriptor']['info']['localisation_server'] + "/" + data['name']
-                dest = "/var/lib/pulse2/packages/hash/" + data['descriptor']['info']['localisation_server'] + "/" + data['name']
-                
-                need_hash = False
-                counter_no_hash = 0
-                counter_hash = 0
-                
-                for file_not_hashed in dest_not_hash:
-                    counter_no_hash += 1
-                
-                if not os.path.exists(dest):
-                    need_hash = True
-                else:
-                    if len(os.listdir(dest)) == 0:
-                        need_hash = True
-                    else:
-                        filelist = os.listdir(dest)
-                        for file_package in filelist:
-                            file_package_no_hash = file_package.replace('.hash','')
-                            counter_hash += 1
-                            if os.path.getmtime(dest + "/" + file_package) < os.path.getmtime(dest_not_hash + "/" + file_package_no_hash):
+                try:
+                    self.mutexdeploy.acquire()
+                    if data['name'] in self.hastable:
+                        if (self.hastable[data['name']] + 10) > time.time():
+                            del self.hastable[data['name']]
+                    if not data['name'] in self.hastable:
+                        dest_not_hash = "/var/lib/pulse2/packages/sharing/" + data['descriptor']['info']['localisation_server'] + "/" + data['name']
+                        dest = "/var/lib/pulse2/packages/hash/" + data['descriptor']['info']['localisation_server'] + "/" + data['name']
+                        
+                        need_hash = False
+                        counter_no_hash = 0
+                        counter_hash = 0
+                        
+                        for file_not_hashed in dest_not_hash:
+                            counter_no_hash += 1
+                        
+                        if not os.path.exists(dest):
+                            need_hash = True
+                        else:
+                            if len(os.listdir(dest)) == 0:
                                 need_hash = True
-                    if counter_hash != counter_no_hash:
-                        need_hash = True
-                
-                if need_hash == True:
-                    generate_hash(data['descriptor']['info']['localisation_server'], data['name'], self.hashing_algo, data['packagefile'], self.keyAES32)
- 
+                            else:
+                                filelist = os.listdir(dest)
+                                for file_package in filelist:
+                                    file_package_no_hash = file_package.replace('.hash','')
+                                    counter_hash += 1
+                                    if os.path.getmtime(dest + "/" + file_package) < os.path.getmtime(dest_not_hash + "/" + file_package_no_hash):
+                                        need_hash = True
+                            if counter_hash != counter_no_hash:
+                                need_hash = True
+                        
+                        if need_hash == True:
+                            generate_hash(data['descriptor']['info']['localisation_server'], data['name'], self.hashing_algo, data['packagefile'], self.keyAES32)
+                        self.hastable[data['name']]= time.time()
+                except Exception:
+                    logger.error("%s" % (traceback.format_exc()))
+                finally:
+                    self.mutexdeploy.release()
                 content = ""
                 try:
                     with open(dest + ".hash", "rb") as infile:
