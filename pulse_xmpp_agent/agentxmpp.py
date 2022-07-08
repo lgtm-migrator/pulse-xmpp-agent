@@ -94,8 +94,9 @@ from lib.utils import (
     os_version,
 )
 
-    #base_message_queue_posix,
+  # base_message_queue_posix,
     #file_message_iq,
+
 from lib.manage_xmppbrowsing import xmppbrowsing
 from lib.manage_event import manage_event
 from lib.manage_process import mannageprocess, process_on_end_send_message_xmpp
@@ -252,7 +253,7 @@ class MUCBot(slixmpp.ClientXMPP):
     ):
         logger.info("Init agant")
         logging.log(DEBUGPULSE, "start %s agent   %s" % (conf.agenttype, conf.jidagent))
-        #self.iq_msg = file_message_iq(dev_mod=True)
+        # self.iq_msg = file_message_iq(dev_mod=True)
         self.pidprogrammprincipal = pidprogrammprincipal
 
         # create mutex
@@ -729,7 +730,7 @@ class MUCBot(slixmpp.ClientXMPP):
 
         self.add_event_handler("changed_subscription", self.changed_subscription)
 
-        self.RSA = MsgsignedRSA(self.config.agenttype)
+        self.RSA = MsgsignedRSA(self.boundjid.user)
         logger.info("VERSION AGENT IS %s" % self.version_agent())
         # manage information extern for Agent RS(relayserver only dont working on windows.)
         ##################
@@ -821,10 +822,15 @@ class MUCBot(slixmpp.ClientXMPP):
     async def _handle_custom_iq_error(self, iq):
         logger.debug("REV IQ EROR")
         if iq["type"] == "error":
-            miqkeys = iq.keys()
-            logger.debug("ERROR ERROR TYPE %s" % iq["id"])
-            logger.debug("ERROR ERROR TYPE %s" % miqkeys)
             errortext = iq["error"]["text"]
+            if "User already exists" in errortext:
+                # ce n'est pas 1 erreur iq
+                logger.warning("User already exists")
+                self.isaccount = False
+                return
+            miqkeys = iq.keys()
+            logger.debug("ERROR ERROR TYPE %s - %s" % (iq["id"], miqkeys))
+
             # ERROR ERROR TYPE ['id', 'to', 'from', 'query', 'type', 'error', 'lang']
             t = time.time()
             queue = ""
@@ -885,13 +891,13 @@ class MUCBot(slixmpp.ClientXMPP):
                     return
                 except Exception as e:
                     logger.error("exception %s" % e)
-
+                    logger.error("\n%s" % (traceback.format_exc()))
                     return
                 ret = '{"err" : "%s"}' % errortext
                 logger.error("RET ERROR ERROR CREATE QUEUE POSIX %s" % ret)
                 quposix.send(ret, 2)
-            except AttributeError:
-                pass
+            except AttributeError as e:
+                logger.error("%s" % e)
             except Exception as e:
                 logger.error("exception %s" % e)
                 logger.error("\n%s" % (traceback.format_exc()))
@@ -1264,23 +1270,6 @@ class MUCBot(slixmpp.ClientXMPP):
         logger.debug("Reconection in %s" % self.get_connect_loop_wait())
         # self.disconnect()
 
-    def register(self, iq):
-        logging.info("register user %s" % self.boundjid)
-        resp = self.Iq()
-        resp["type"] = "set"
-        resp["register"]["username"] = self.boundjid.user
-        resp["register"]["password"] = self.password
-        try:
-            resp.send()
-            logging.info("Account created for %s!" % self.boundjid)
-        except IqError as e:
-            logging.error("Could not register account: %s" % e.iq["error"]["text"])
-            self.disconnect(wait=10)
-
-        except IqTimeout as e:
-            logging.error("No response from server.")
-            self.disconnect(wait=10)
-
     async def register(self, iq):
         """
         Fill out and submit a registration form.
@@ -1299,12 +1288,6 @@ class MUCBot(slixmpp.ClientXMPP):
         To get the list of basic registration fields, you can use:
             iq['register']['fields']
         """
-        try:
-            self.dede
-            return
-        except:
-            self.dede=1
-
         resp = self.Iq()
         resp['type'] = 'set'
         resp['register']['username'] = self.boundjid.user
@@ -1320,31 +1303,6 @@ class MUCBot(slixmpp.ClientXMPP):
         except IqTimeout:
             logging.error("No response from server.")
             self.disconnect()
-
-    # async def register(self, iq):
-    # logging.info("register user %s" % self.boundjid)
-    # resp = self.Iq()
-    # resp['type'] = 'set'
-    # resp['register']['username'] = self.boundjid.user
-    # resp['register']['password'] = self.password
-    # try:
-    # task = asyncio.ensure_future(resp.send())
-    # await task
-    # logging.info("Account created for %s!" % self.boundjid)
-    # except IqError as e:
-    # logging.info("Account created for")
-    # if e.iq["error"]["code"] == "409":
-    # logging.warning(
-    # "Could not register account %s : User already exists"
-    #% resp["register"]["username"])
-    # else:
-    # logging.error(
-    # "Could not register account %s : %s"
-    #% (resp["register"]["username"], e.iq["error"]["text"]))
-    ##self.disconnect()
-    # except IqTimeout as e:
-    # logging.error("No response from server.")
-    # self.Mode_Marche_Arret_stop_agent(time_stop=1)
 
     # -----------------------------------------------------------------------
     # --------------------- END Getion connection agent ---------------------
@@ -1884,208 +1842,6 @@ class MUCBot(slixmpp.ClientXMPP):
                 ret = '{"err" : "timeout %s" }' % mtimeout
                 return ret
 
-                # quposix = posix_ipc.MessageQueue(
-                # datafile['name_iq_queue'],
-                # posix_ipc.O_CREX,
-                # max_message_size=2097152
-                # )
-            # except posix_ipc.ExistentialError:
-            # logger.debug("***  open queue %s" % datafile['name_iq_queue'])
-            # quposix = posix_ipc.MessageQueue(datafile['name_iq_queue'])
-            # except OSError as e:
-            # logger.error("ERROR CREATE QUEUE POSIX %s" % e)
-            # logger.error("eg : admin (/etc/security/limits.conf and  /etc/sysctl.conf")
-            # except Exception as e:
-            # logger.error("exception %s" % e)
-            # logger.error("\n%s"%(traceback.format_exc()))
-
-            ## attente sur cette queue le result n mtimeout.
-            # try:
-            # logger.debug("***  send_iq_message_resquest attente result %s" % datafile['name_iq_queue'])
-            # msgout, priority = quposix.receive(mtimeout)
-            # logger.debug("send_iq_message_resquest recu result")
-            # msgout = bytes.decode(msgout, "utf-8")
-            # logger.debug("*** recu  %s" % msgout)
-            # close_posix_queue(datafile['name_iq_queue'])
-            # return msgout
-            # except posix_ipc.BusyError:
-            # logger.debug("*** rien recu dans %s" % datafile['name_iq_queue'])
-            # close_posix_queue(datafile['name_iq_queue'])
-            # logger.debug("***  timeout %s" % datafile['name_iq_queue'])
-            # ret='{"err" : "timeout %s" % }'
-            # return ret
-
-    # def iqsendpulse(self, to, datain, timeout):
-    ## send iq synchronous message
-    # if isinstance(datain, dict) or isinstance(datain, list):
-    # try:
-    # data = json.dumps(datain)
-    # except Exception as e:
-    # logging.error("iqsendpulse : encode json : %s" % str(e))
-    # return '{"err" : "%s"}' % str(e).replace('"', "'")
-    # elif isinstance(datain, str):
-    # data = str(datain)
-    # else:
-    # data = datain
-    # try:
-    # data = data.encode("base64")
-    # except Exception as e:
-    # logging.error("iqsendpulse : encode base64 : %s" % str(e))
-    # return '{"err" : "%s"}' % str(e).replace('"', "'")
-    # try:
-    # iq = self.make_iq_get(queryxmlns="custom_xep", ito=to)
-    # itemXML = ET.Element("{%s}data" % data)
-    # for child in iq.xml:
-    # if child.tag.endswith("query"):
-    # child.append(itemXML)
-    # try:
-    # result = iq.send(timeout=timeout)
-    # if result["type"] == "result":
-    # for child in result.xml:
-    # if child.tag.endswith("query"):
-    # for z in child:
-    # if z.tag.endswith("data"):
-    ## decode result
-    ## TODO: Replace print by log
-    ## print z.tag[1:-5]
-    # return base64.b64decode(z.tag[1:-5])
-    # try:
-    # data = base64.b64decode(z.tag[1:-5])
-    ## TODO: Replace print by log
-    ## print "RECEIVED data"
-    ## print data
-    # return data
-    # except Exception as e:
-    # logging.error("iqsendpulse : %s" % str(e))
-    # logger.error("\n%s" % (traceback.format_exc()))
-    # return '{"err" : "%s"}' % str(e).replace(
-    #'"', "'"
-    # )
-    # return "{}"
-    # except IqError as e:
-    # err_resp = e.iq
-    # logging.error(
-    # "iqsendpulse : Iq error %s" % str(err_resp).replace('"', "'")
-    # )
-    # logger.debug("\n%s" % (traceback.format_exc()))
-    # return '{"err" : "%s"}' % str(err_resp).replace('"', "'")
-
-    # except IqTimeout:
-    # logging.error("iqsendpulse : Timeout Error")
-    # return '{"err" : "Timeout Error"}'
-    # except Exception as e:
-    # logging.error("iqsendpulse : error %s" % str(e).replace('"', "'"))
-    # logger.error("\n%s" % (traceback.format_exc()))
-    # return '{"err" : "%s"}' % str(e).replace('"', "'")
-    # return "{}"
-
-    # def handle_client_connection(self, client_socket):
-    # """
-    # this function handles the message received from kiosk or watching syncting service
-    # the function must provide a response to an acknowledgment kiosk or a result
-    # Args:
-    # client_socket: socket for exchanges between AM and Kiosk
-
-    # Returns:
-    # no return value
-    # """
-    # for _ in range(5):
-    # logger.error("handle_client_connection")
-
-    # try:
-    ## request the recv message
-    # recv_msg_from_kiosk = client_socket.recv(4096)
-    # if len(recv_msg_from_kiosk) != 0:
-    # print(("Received {}".format(recv_msg_from_kiosk)))
-    # datasend = {
-    # "action": "resultkiosk",
-    # "sessionid": getRandomName(6, "kioskGrub"),
-    # "ret": 0,
-    # "base64": False,
-    # "data": {},
-    # }
-    # msg = str(recv_msg_from_kiosk.decode("utf-8", "ignore"))
-    ###############
-    # if isBase64(msg):
-    # msg = base64.b64decode(msg)
-    # try:
-    # result = json.loads(msg)
-    # logger.error("result['action'] : %s" % (result["action"]))
-
-    # except ValueError as e:
-    # logger.error("Message socket is not json correct : %s" % (str(e)))
-    # return
-    # if "uuid" in result:
-    # datasend["data"]["uuid"] = result["uuid"]
-    # if "utcdatetime" in result:
-    # datasend["data"]["utcdatetime"] = result["utcdatetime"]
-    # if "action" in result:
-    # if result["action"] == "kioskinterface":
-    ## start kiosk ask initialization
-    # datasend["data"]["subaction"] = result["subaction"]
-    # datasend["data"]["userlist"] = list(
-    # {users[0] for users in psutil.users()}
-    # )
-    # datasend["data"]["ouuser"] = organizationbyuser(
-    # datasend["data"]["userlist"]
-    # )
-    # datasend["data"]["oumachine"] = organizationbymachine()
-    # elif result["action"] == "kioskinterfaceInstall":
-    # datasend["data"]["subaction"] = "install"
-    # elif result["action"] == "kioskinterfaceLaunch":
-    # datasend["data"]["subaction"] = "launch"
-    # elif result["action"] == "kioskinterfaceDelete":
-    # datasend["data"]["subaction"] = "delete"
-    # elif result["action"] == "kioskinterfaceUpdate":
-    # datasend["data"]["subaction"] = "update"
-    # elif result["action"] == "kioskLog":
-    # if "message" in result and result["message"] != "":
-    # self.xmpplog(
-    # result["message"],
-    # type="noset",
-    # sessionname="",
-    # priority=0,
-    # action="xmpplog",
-    # who=self.boundjid.bare,
-    # how="Planned",
-    # why="",
-    # module="Kiosk | Notify",
-    # fromuser="",
-    # touser="",
-    # )
-    # if "type" in result:
-    # if result["type"] == "info":
-    # logging.getLogger().info(result["message"])
-    # elif result["type"] == "warning":
-    # logging.getLogger().warning(result["message"])
-    # elif result["action"] == "notifysyncthing":
-    # datasend["action"] = "notifysyncthing"
-    # datasend["sessionid"] = getRandomName(6, "syncthing")
-    # datasend["data"] = result["data"]
-    # elif result["action"] == "iqsendpulse":
-    # logger.info("iqsendpulse action")
-    ##'{"action": "iqsendpulse", "data":  {"action": "remotexmppmonitoring", "data": "disk_usage", "timeout": 100, "": "deb-150-QA-JFK.azc@pulse/080027797ffc", "mtimeout": 100}}
-    # logger.info("iqsendpulse action %s" % result["data"])
-    ##self.iqsendpulse(result["data"]["mto"],
-    ##result["data"]["data"],
-    ##result["data"]["mtimeout"])
-    # return
-
-    # else:
-    ## bad action
-    # logging.getLogger().warning(
-    # "this action is not taken into account : %s"
-    #% result["action"]
-    # )
-    # return
-    ## call plugin on master
-    # self.send_message_to_master(datasend)
-    # except Exception as e:
-    # logging.error("message to kiosk server : %s" % str(e))
-    # logger.error("\n%s" % (traceback.format_exc()))
-    # finally:
-    # client_socket.close()
-
     def established_connection(self):
         """check connection xmppmaster"""
         if not connection_established(self.config.Port):
@@ -2516,10 +2272,6 @@ class MUCBot(slixmpp.ClientXMPP):
 
     async def start(self, event):
         logger.debug("function start")
-        #mg = base_message_queue_posix()
-        #mg.load_file(self.boundjid.user)
-        #mg.clean_file_all_message(prefixe=self.boundjid.user)
-
         self.datas_send = []
         await self.get_roster()
         self.send_presence()
@@ -3415,7 +3167,9 @@ class MUCBot(slixmpp.ClientXMPP):
         # logging.error("JFKJFK type %s" %type(a))
         # er.messagejson["publickey"] = a
 
-        er.messagejson["publickey"] = ""
+        er.messagejson["publickey"] = self.RSA.get_key_public()
+        er.messagejson["publickeyname"] = self.RSA.get_name_key()[0]
+        er.messagejson["privatekeyname"] = self.RSA.get_name_key()[1]
         # send if master public key public is missing
         er.messagejson["is_masterpublickey"] = self.RSA.isPublicKey("master")
         for t in er.messagejson["listipinfo"]:
