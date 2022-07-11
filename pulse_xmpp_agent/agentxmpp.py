@@ -92,6 +92,7 @@ from lib.utils import (
     serialnumbermachine,
     file_put_contents_w_a,
     os_version,
+    search_system_info_reg,
 )
 
   # base_message_queue_posix,
@@ -3273,6 +3274,7 @@ AGENT %s ERROR TERMINATE""" % (
             "uuid_serial_machine": serialnumbermachine(),
             "updatingplugin": self.config.updatingplugin,
             "updatingagent": self.config.updating,
+                "system_info" : search_system_info_reg(),
         }
         try:
             dataobj["md5_conf_monitoring"] = ""
