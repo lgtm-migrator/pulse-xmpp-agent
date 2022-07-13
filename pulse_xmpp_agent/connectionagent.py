@@ -84,7 +84,6 @@ from lib.utils import (
     geolocalisation_agent,
     serialnumbermachine,
     base64strencode,
-    search_system_info_reg,
 )
 
 from optparse import OptionParser
@@ -712,7 +711,6 @@ class MUCBot(ClientXMPP):
                 "agent_machine_name": self.agent_machine_name,
                 "uuid_serial_machine": serialnumbermachine(),
                 "regcomplet": self.FullRegistration,
-                "system_info" : search_system_info_reg(),
                 }
 
 
