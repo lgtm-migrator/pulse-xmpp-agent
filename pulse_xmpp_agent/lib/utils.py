@@ -2050,12 +2050,13 @@ class Program:
         self.programlist.clear()
 
 
+
 class AESCipher:
     def __init__(self, key, BS=32):
         if isinstance(key, str):
-            self.key = key.encode("utf-8")
+            self.key = key.encode('utf-8')
         else:
-            self.key = key  # self.key is bytes
+            self.key = key # self.key is bytes
         self.BS = BS
 
     def _bchr(self, s):
@@ -2065,8 +2066,8 @@ class AESCipher:
         return s
 
     def pad(self, data_to_pad):
-        padding_len = self.BS - len(data_to_pad) % self.BS
-        padding = self._bchr(padding_len) * padding_len
+        padding_len = self.BS-len(data_to_pad)%self.BS
+        padding = self._bchr(padding_len)*padding_len
         return data_to_pad + padding
 
     def encrypt_base64_byte(self, raw):
@@ -2074,26 +2075,26 @@ class AESCipher:
             raw = raw.encode("utf-8")
         iv = Random.new().read(AES.block_size)
         cipher = AES.new(self.key, AES.MODE_CBC, iv)
-        result = iv + cipher.encrypt(self.pad(raw))
+        result= iv + cipher.encrypt(self.pad(raw))
         return base64.b64encode(result)
 
     def encrypt(self, raw):
-        return self.encrypt_base64_byte(raw).decode("utf-8")
+        return self.encrypt_base64_byte(raw).decode('utf-8')
 
     def decrypt(self, enc):
         if isinstance(enc, str):
             enc = enc.encode("utf-8")
         enc = base64.b64decode(enc)
-        iv = enc[: AES.block_size]
+        iv = enc[:AES.block_size]
         cipher = AES.new(self.key, AES.MODE_CBC, iv)
-        return self._unpad(cipher.decrypt(enc[AES.block_size :]))
+        return self._unpad(cipher.decrypt(enc[AES.block_size:]))
 
     def decrypt_base64_byte(self, enc):
         return self.decrypt_base64_str(enc).encode("utf-8")
 
     def _unpad(self, s):
-        dtrdata = s[: -ord(s[len(s) - 1 :])]
-
+        dtrdata = s[:-ord(s[len(s)-1:])]
+        return dtrdata.decode("utf-8")
 
 def setgetcountcycle(data=None):
     chemin = os.path.join(
