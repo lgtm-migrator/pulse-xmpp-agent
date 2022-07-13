@@ -1,5 +1,5 @@
 [Unit]
-Description= Pulse master agent substitute for machine agents configuration
+Description= Pulse master agent substitute
 After=samba.service slapd.service ejabberd.service
 Requires=ejabberd.service
 

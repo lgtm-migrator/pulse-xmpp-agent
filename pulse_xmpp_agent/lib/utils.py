@@ -376,7 +376,6 @@ def refreshfingerprint():
 def file_get_contents(
     filename, use_include_path=0, context=None, offset=-1, maxlen=-1, encoding=None
 ):
-
     if filename.find("://") > 0:
         ret = urllib.request.urlopen(filename).read()
         if offset > 0:
@@ -575,7 +574,6 @@ def loadModule(filename):
 
 
 def call_plugin_separate(name, *args, **kwargs):
-    logger.debug("call_plugin_separate %s" % name)
     try:
         nameplugin = name
         if args[0].config.plugin_action:
@@ -603,7 +601,6 @@ def call_plugin_separate(name, *args, **kwargs):
 
 
 def call_plugin(name, *args, **kwargs):
-    logger.debug("call_plugin %s" % name)
     try:
         nameplugin = name
         if args[0].config.plugin_action:
@@ -635,7 +632,6 @@ def call_plugin(name, *args, **kwargs):
 
 
 def call_plugin_sequentially(name, *args, **kwargs):
-    logger.debug("call_plugin_sequentially %s" % name)
     try:
         nameplugin = name
         if args[0].config.plugin_action:
@@ -928,7 +924,6 @@ def powerschellscript1ps1(namescript):
     except Exception:
         logger.error("\n%s" % (traceback.format_exc()))
     return obj
-
 
 class shellcommandtimeout(object):
     def __init__(self, cmd, timeout=15, strimresult=False):
@@ -1488,7 +1483,6 @@ class protodef:
         else:
             logging.getLogger().debug("  fproto FALSE")
         self.refreshfingerprintproto()
-        logging.getLogger().debug("self.fileprotoinfo%s" % self.fileprotoinfo)
         self.fingerprintproto = file_get_binarycontents(self.fileprotoinfo)
         self.proto = pickle.loads(self.fingerprintproto)
         return True, self.proto
@@ -2034,13 +2028,12 @@ class Program:
         self.programlist.clear()
 
 
-
 class AESCipher:
     def __init__(self, key, BS=32):
         if isinstance(key, str):
-            self.key = key.encode('utf-8')
+            self.key = key.encode("utf-8")
         else:
-            self.key = key # self.key is bytes
+            self.key = key  # self.key is bytes
         self.BS = BS
 
     def _bchr(self, s):
@@ -2050,8 +2043,8 @@ class AESCipher:
         return s
 
     def pad(self, data_to_pad):
-        padding_len = self.BS-len(data_to_pad)%self.BS
-        padding = self._bchr(padding_len)*padding_len
+        padding_len = self.BS - len(data_to_pad) % self.BS
+        padding = self._bchr(padding_len) * padding_len
         return data_to_pad + padding
 
     def encrypt_base64_byte(self, raw):
@@ -2059,25 +2052,25 @@ class AESCipher:
             raw = raw.encode("utf-8")
         iv = Random.new().read(AES.block_size)
         cipher = AES.new(self.key, AES.MODE_CBC, iv)
-        result= iv + cipher.encrypt(self.pad(raw))
+        result = iv + cipher.encrypt(self.pad(raw))
         return base64.b64encode(result)
 
     def encrypt(self, raw):
-        return self.encrypt_base64_byte(raw).decode('utf-8')
+        return self.encrypt_base64_byte(raw).decode("utf-8")
 
     def decrypt(self, enc):
         if isinstance(enc, str):
             enc = enc.encode("utf-8")
         enc = base64.b64decode(enc)
-        iv = enc[:AES.block_size]
+        iv = enc[: AES.block_size]
         cipher = AES.new(self.key, AES.MODE_CBC, iv)
-        return self._unpad(cipher.decrypt(enc[AES.block_size:]))
+        return self._unpad(cipher.decrypt(enc[AES.block_size :]))
 
     def decrypt_base64_byte(self, enc):
         return self.decrypt_base64_str(enc).encode("utf-8")
 
     def _unpad(self, s):
-        dtrdata = s[:-ord(s[len(s)-1:])]
+        dtrdata = s[:-ord(s[len(s) - 1 :])]
         return dtrdata.decode("utf-8")
 
 def setgetcountcycle(data=None):
@@ -3525,7 +3518,6 @@ def serialnumbermachine():
         if sys.platform.startswith("win"):
             result = simplecommand("wmic csproduct get uuid")
             if result["code"] == 0 and result["result"]:
-                # a = [x.strip().decode("utf-8", "ignore") for x in result["result"]]
                 serial_uuid_machine = (
                     "".join(result["result"]).replace("UUID", "").strip()
                 )
@@ -3537,8 +3529,7 @@ def serialnumbermachine():
             cmd = r"""ioreg -d2 -c IOPlatformExpertDevice | awk -F\" '/IOPlatformUUID/{print $(NF-1)}'"""
             result = simplecommand(cmd)
             if result["code"] == 0 and result["result"]:
-                a = [x.strip().decode("utf-8", "ignore") for x in result["result"]]
-                serial_uuid_machine = "".join(a).replace("UUID", "").strip()
+                serial_uuid_machine = "".join(result["result"]).replace("UUID", "").strip()
         else:
             logger.warning(
                 "the serialnumbermachine function is not implemented for your os: %s"
@@ -3768,7 +3759,7 @@ class base_message_queue_posix(Singleton):
 
 class DateTimebytesEncoderjson(json.JSONEncoder):
     """
-    Used to hanld datetime in json files.
+    Used to handle datetime in json files.
     """
 
     def default(self, obj):

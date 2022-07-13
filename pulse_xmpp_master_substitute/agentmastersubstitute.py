@@ -39,6 +39,7 @@ from lib.plugins.kiosk import KioskDatabase
 from lib.plugins.msc import MscDatabase
 from lib.plugins.pkgs import PkgsDatabase
 from bin.agent import MUCBot
+
 from lib import manageRSAsigned
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib"))

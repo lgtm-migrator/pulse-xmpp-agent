@@ -125,8 +125,9 @@ except ImportError:
 from sqlalchemy.orm import scoped_session
 import random
 
-if sys.version_info >= (3,0,0):
+if sys.version_info >= (3, 0, 0):
     basestring = (str, bytes)
+
 
 logger = logging.getLogger()
 
@@ -4037,7 +4038,7 @@ class XmppMasterDatabase(DatabaseHelper):
 
     def _iso_8859_1__to__utf8(self, strdata):
         try:
-            strdata = bytes(strdata,'iso-8859-1').decode('utf8')
+            strdata = bytes(strdata, "iso-8859-1").decode("utf8")
         except Exception:
             return strdata
 
@@ -7978,8 +7979,8 @@ class XmppMasterDatabase(DatabaseHelper):
             except ValueError:
                 return False
 
-        def is_integer_string():
-            if is_number_string():
+        def is_integer_string(s):
+            if is_number_string(s):
                 try:
                     int(s)
                     return True
@@ -7988,8 +7989,8 @@ class XmppMasterDatabase(DatabaseHelper):
             else:
                 return False
 
-        def is_float_string():
-            if is_number_string():
+        def is_float_string(s):
+            if is_number_string(s):
                 try:
                     int(s)
                     return False

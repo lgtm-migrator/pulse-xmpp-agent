@@ -143,7 +143,7 @@ def nextalternativeclusterconnectioninformation(conffile):
     Args:
         conffile: the configuration file to modify
     """
-    alternatif_conf={ }
+    alternatif_conf = {}
     logger.error("JFKJFK function nextalternativeclusterconnection")
     if not os.path.isfile(conffile):
         logger.error("file alternatif conf missing %s" % conffile)
@@ -151,33 +151,48 @@ def nextalternativeclusterconnectioninformation(conffile):
 
     Config = ConfigParser()
     Config.read(conffile)
-    alternatif_conf['nextserver'] = Config.getint("alternativelist", "nextserver")
-    alternatif_conf['nbserver'] = Config.getint("alternativelist", "nbserver")
-    alternatif_conf['listars'] = [ x.strip() for x \
-        in Config.get("alternativelist", "listars").split(",") if x.strip() != ""]
+    alternatif_conf["nextserver"] = Config.getint("alternativelist", "nextserver")
+    alternatif_conf["nbserver"] = Config.getint("alternativelist", "nbserver")
+    alternatif_conf["listars"] = [
+        x.strip()
+        for x in Config.get("alternativelist", "listars").split(",")
+        if x.strip() != ""
+    ]
 
-    if len(alternatif_conf['listars']) != alternatif_conf['nbserver']:
-        logger.error("format alternatif file %s : count list ars != nbserver" % conffile)
+    if len(alternatif_conf["listars"]) != alternatif_conf["nbserver"]:
+        logger.error(
+            "format alternatif file %s : count list ars != nbserver" % conffile
+        )
         return {}
 
-    if alternatif_conf['nextserver'] > alternatif_conf['nbserver']:
-        alternatif_conf['nextserver'] = 1
+    if alternatif_conf["nextserver"] > alternatif_conf["nbserver"]:
+        alternatif_conf["nextserver"] = 1
 
     # charge les informations server
-    for ars in alternatif_conf['listars']:
+    for ars in alternatif_conf["listars"]:
         if not Config.has_section(ars):
-           logger.error("format alternatif file %s : section %s missing" % (conffile, ars))
-           return {}
+            logger.error(
+                "format alternatif file %s : section %s missing" % (conffile, ars)
+            )
+            return {}
 
-    for ars in alternatif_conf['listars']:
-        if not (Config.has_option(ars, "port") and Config.has_option(ars, "server") and Config.has_option(ars, "guacamole_baseurl")):
-            logger.error("format alternatif file %s : section %s farmat error" % (conffile, ars))
+    for ars in alternatif_conf["listars"]:
+        if not (
+            Config.has_option(ars, "port")
+            and Config.has_option(ars, "server")
+            and Config.has_option(ars, "guacamole_baseurl")
+        ):
+            logger.error(
+                "format alternatif file %s : section %s farmat error" % (conffile, ars)
+            )
             return {}
         else:
-            alternatif_conf[ars]={}
-            alternatif_conf[ars]['port']=Config.getint(ars, 'port')
-            alternatif_conf[ars]['server']=Config.get(ars, 'server')
-            alternatif_conf[ars]['guacamole_baseurl']=Config.get(ars, 'guacamole_baseurl')
+            alternatif_conf[ars] = {}
+            alternatif_conf[ars]["port"] = Config.getint(ars, "port")
+            alternatif_conf[ars]["server"] = Config.get(ars, "server")
+            alternatif_conf[ars]["guacamole_baseurl"] = Config.get(
+                ars, "guacamole_baseurl"
+            )
     return alternatif_conf
 
 
@@ -338,8 +353,8 @@ class confParameter:
         Config = ConfigParser()
         namefileconfig = conffilename(typeconf)
         if not os.path.isfile(namefileconfig):
-            logger.error("file missing %s" % namefileconfig)
-            logger.error('verify type "agent machine or relayserver"')
+            logger.error("The file %s is missing" % namefileconfig)
+
         Config.read(namefileconfig)
         if os.path.exists(namefileconfig + ".local"):
             Config.read(namefileconfig + ".local")
@@ -611,7 +626,8 @@ class confParameter:
                         setattr(self, keyparameter, valueparameter)
                 else:
                     logger.warning(
-                        "load plugin %s : parameter File plugin [%s]: missing" % (z, namefile)
+                        "load plugin %s : parameter File plugin [%s]: missing"
+                        % (z, namefile)
                     )
         try:
             self.agentcommand = Config.get("global", "relayserver_agent")

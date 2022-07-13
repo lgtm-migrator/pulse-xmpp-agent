@@ -53,8 +53,7 @@ from slixmpp import jid
 import time
 
 logger = logging.getLogger()
-
-plugin = {"VERSION": "1.3", "NAME": "loaddeployment", "TYPE": "substitute"} # fmt: skip
+plugin = {"VERSION": "1.3", "NAME": "loaddeployment", "TYPE": "substitute"}  # fmt: skip
 
 
 def action(objectxmpp, action, sessionid, data, msg, ret):
@@ -651,7 +650,7 @@ def scheduledeployrecoveryjob(self):
         logger.error("%s" % (traceback.format_exc()))
     finally:
         wol_set.discard("")
-        if len(wol_set):
+        if wol_set:
             self._sendwolgroup(wol_set)
 
 
@@ -755,7 +754,9 @@ def applicationdeployjsonuuid(
             uuidmachine, None
         )
         if "error" in objmachine and objmachine["error"] == "MultipleResultsFound":
-            logger.warning("getGuacamoleRelayServerMachineUuid %s" % objmachine["error"])
+            logger.warning(
+                "getGuacamoleRelayServerMachineUuid %s" % objmachine["error"]
+            )
             dupplicate_machines = (
                 XmppMasterDatabase().get_machine_with_dupplicate_uuidinventory(
                     uuidmachine, None

@@ -27,10 +27,13 @@
 from Crypto.PublicKey import RSA
 from Crypto.Signature import pss
 from Crypto.Hash import SHA256
-# from Crypto import Random
-# import pickle
 import os
 import base64
+
+import logging
+import traceback
+
+logger = logging.getLogger()
 
 import logging
 import traceback
@@ -75,7 +78,6 @@ class MsgsignedRSA:
         self.filekeyprivate = os.path.join(
             self.Setdirectorytempinfo(), "%s-private-RSA.key" % self.type
         )
-
         self.dirtempinfo = self.Setdirectorytempinfo()
         self.allkey = None
         self.publickey = None
@@ -163,7 +165,7 @@ class MsgsignedRSA:
         self.bpublickey = self.allkey.export_key('OpenSSH')
         self.bprivatekey = self.allkey.export_key('PEM')
 
-        ## writte fichier public et private
+        # write fichier public et private
         with open(self.filekeypublic,'wb') as file:
             file.write(self.bpublickey)
         with open(self.filekeyprivate,"wb") as file:
@@ -195,7 +197,6 @@ class MsgsignedRSA:
                 return self.bpublickey
             return None
 
-
     def loadkeyprivate(self, filekeyprivate = None):
         """
         Function load from file the public key to object RSA key
@@ -215,7 +216,6 @@ class MsgsignedRSA:
                 self.bprivatekey = self.bprivatekey.export_key()
                 self._init_keypriv()
                 return self.bprivatekey
-
             return None
 
     def loadkeypublicbytes(self, filekeypublic = None):
@@ -229,7 +229,6 @@ class MsgsignedRSA:
         Function load from file the private key to object RSA key
         """
         return self.tobytes(self.loadkeyprivate(filekeyprivate = filekeyprivate))
-
 
     def loadkeypublictobase64byte(self, filekeypublic = None):
         """
@@ -246,7 +245,6 @@ class MsgsignedRSA:
         """
         return self.tostr(self.loadkeypublictobase64byte(filekeypublic = filekeypublic))
 
-
     def loadkeyprivatetobase64byte(self,filekeyprivate=None):
         """
         Function load from file the private keys RSA as a base64 string
@@ -261,7 +259,6 @@ class MsgsignedRSA:
         Function load from file the private keys RSA as a base64 string
         """
         return self.tostr(self.loadkeyprivatetobase64byte(filekeyprivate=filekeyprivate))
-
 
     def Setdirectorytempinfo(self):
         """
@@ -289,7 +286,7 @@ class MsgsignedRSA:
         key = RSA.import_key(open(file_private_key).read())
         b_h = SHA256.new(message)
         signature = pss.new(key).sign(b_h)
-        return self.tostr(base64.b64encode(signature))
+        return self.tostr(base64.b64encode(signature)
 
     def verifymsg(self,message, b64_signed_message, file_public_key = None):
         """

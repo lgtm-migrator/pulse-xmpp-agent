@@ -228,7 +228,7 @@ class QueueManager(SyncManager):
 
 class DateTimebytesEncoderjson(json.JSONEncoder):
     """
-    Used to hanld datetime in json files.
+    Used to handle datetime in json files.
     """
 
     def default(self, obj):
@@ -251,9 +251,9 @@ class MUCBot(slixmpp.ClientXMPP):
         eventkillpipe,
         pidprogrammprincipal,
     ):
-        logger.info("Init agant")
-        logging.log(DEBUGPULSE, "start %s agent   %s" % (conf.agenttype, conf.jidagent))
-        # self.iq_msg = file_message_iq(dev_mod=True)
+        logging.log(
+            DEBUGPULSE, "start machine  %s Type %s" % (conf.jidagent, conf.agenttype)
+        )
         self.pidprogrammprincipal = pidprogrammprincipal
 
         # create mutex
@@ -693,7 +693,6 @@ class MUCBot(slixmpp.ClientXMPP):
         else:
             logging.warning("not enable cyclic inventory")
 
-        # self.schedule('queueinfo', 10 , self.queueinfo, repeat=True)
         if self.config.agenttype not in ["relayserver"]:
             if self.config.sched_session_reload:
                 self.schedule("session reload", 15, self.reloadsesssion, repeat=False)
@@ -702,14 +701,12 @@ class MUCBot(slixmpp.ClientXMPP):
                 "reprise_evenement", 10, self.handlereprise_evenement, repeat=True
             )
 
-        # _____________ Getion connection agent _______________________
+        # Parameters for the agent connexion
         self.add_event_handler("register", self.register)
         self.add_event_handler("connecting", self.handle_connecting)
         self.add_event_handler("connection_failed", self.handle_connection_failed)
         self.add_event_handler("disconnected", self.handle_disconnected)
-        # _____________ Getion connection agent _______________________
 
-        # self.add_event_handler("register", self.register, threaded=True)
         self.add_event_handler("session_start", self.start)
         self.add_event_handler("message", self.message)
         self.add_event_handler(
@@ -750,7 +747,6 @@ class MUCBot(slixmpp.ClientXMPP):
             )
         )
 
-        #base_message_queue_posix().clean_file_all_message(prefixe=self.boundjid.user)
 
         if self.config.agenttype in ["relayserver"]:
             from lib.manage_info_command import manage_infoconsole
@@ -784,15 +780,6 @@ class MUCBot(slixmpp.ClientXMPP):
         elif sys.platform.startswith("darwin"):
             signal.signal(signal.SIGINT, self.signal_handler)
 
-        # self.register_handler(
-        # handler.Callback(
-        # "CustomXEP Handler",
-        # matcher.MatchXPath(
-        # "{%s}iq/{%s}query" % (self.default_ns, "custom_xep")
-        # ),
-        # self._handle_custom_iq,
-        # )
-        # )
         if self.config.sched_check_cmd_file:
             self.schedule(
                 "execcmdfile", laps_time_action_extern, self.execcmdfile, repeat=True
@@ -1308,6 +1295,446 @@ class MUCBot(slixmpp.ClientXMPP):
     # --------------------- END Getion connection agent ---------------------
     # -----------------------------------------------------------------------
 
+        # ####### Alternatf Configuration agent Machine #########
+        self.brestartbot = False
+        if not self.config.agenttype in ["relayserver"]:
+            self.startmode = (
+                True  # si connection echoue on charge alternative configuration
+            )
+            self.alternatifconnection = {}  # alternative connection for machine
+
+    def terminateprogram(self):
+        if sys.platform.startswith("win"):
+            cmd = "TASKKILL /F /PID %s /T" % self.pidprogrammprincipal
+            # logging.log(DEBUGPULSE, "cmd %s" % cmd)
+            os.system(cmd)
+        else:
+            if self.config.agenttype in ["relayserver"]:
+                cmd = "ps -ef | grep 'relayserver' | grep 'agentxmpp' | grep -v grep | awk '{print $2}' | xargs -r kill -9"
+            else:
+                cmd = "ps -ef | grep 'machine' | grep 'agentxmpp' | grep -v grep | awk '{print $2}' | xargs -r kill -9"
+            os.system(cmd
+
+    async def _handle_custom_iq_error(self, iq):
+        if iq["type"] == "error":
+            errortext = iq["error"]["text"]
+            if "User already exists" in errortext:
+                # ce n'est pas 1 erreur iq
+                logger.warning("User already exists")
+                self.isaccount = False
+                return
+            miqkeys = iq.keys()
+            logger.debug("ERROR ERROR TYPE %s - %s" % (iq["id"], miqkeys))
+            t = time.time()
+            queue = ""
+            liststop = []
+            deleted_queue = []
+
+            try:
+                for ta in self.datas_send:
+                    logger.debug("We treat %s" % ta["name_iq_queue"])
+                    logger.debug("Time of the end %s " % (ta["time"]))
+                    logger.debug("Time now %s " % (t))
+                    logger.debug("The sessioniq is: %s" % ta["sesssioniq"])
+
+                    if ta["time"] < t:
+                        logger.debug("The queue %s timed out, we remove it." % ta["name_iq_queue"])
+                        deleted_queue.append(ta["name_iq_queue"])
+                        continue
+                    if ta["sesssioniq"] == iq["id"]:
+                        queue = ta["name_iq_queue"]
+                    liststop.append(ta)
+                self.datas_send = liststop
+                logger.debug("The pending lists to remove %s" % deleted_queue)
+                # We delete the ended queues
+                # We remove the old lists
+                for ta in deleted_queue:
+                    try:
+                        logger.debug("delete queue %s" % ta["name_iq_queue"])
+                        posix_ipc.unlink_message_queue(ta["name_iq_queue"])
+                    except:
+                        pass
+                if not queue:
+                    logger.debug("There is no queue left. We quit")
+                    return
+
+                # A queue exits for the result.
+                # Creation or opening of queues
+                try:
+                    quposix = posix_ipc.MessageQueue(
+                        queue, posix_ipc.O_CREX, max_message_size=2097152
+                    )
+                except posix_ipc.ExistentialError as existant_error:
+                    logger.debug("An error occured while trying to open the %s queue" % queue)
+
+                    quposix = posix_ipc.MessageQueue(queue)
+                except OSError as error_creating_queue_oserror:
+                    logger.error("An error occured while trying to create the Posix Queue")
+                    logger.error("We obtained the error: \n %s" % error_creating_queue_oserror)
+
+                    logger.error("To fix this, please modify/etc/security/limits.conf and /etc/sysctl.conf")
+                    logger.error("The system limits might have been reached for posix queues. Please review them")
+                    return
+                except Exception as error_exception:
+                    logger.error("An error occured while trying to create the Posix Queue.")
+                    logger.error("We obtained the error: \n %s" % error_exception)
+
+                    logger.error("We hit the backtrace \n%s" % (traceback.format_exc()))
+                    return
+                ret = '{"err" : "%s"}' % errortext
+                logger.error("The IQ error when trying to create the Posix queue is: %s" % ret)
+
+                logger.error("")
+
+                quposix.send(ret, 2)
+            except AttributeError as error_attribute:
+                logger.error("An error occured while trying to create the Posix Queue because of AttributeError.")
+                logger.error("We obtained the error: \n %s" % error_attribute)
+                pass
+            except Exception as error_exception:
+                logger.error("An exception occured with the error %s" % error_exception)
+                logger.error("We hit the backtrace: \n %s" % traceback.format_exc())
+
+    async def _handle_custom_iq(self, iq):
+        if iq["query"] != "custom_xep":
+            return
+        if iq["type"] == "get":
+            pass
+        elif iq["type"] == "set":
+            pass
+        elif iq["type"] == "error":
+            logger.error("we got an iq with error type. The id of this iq is: %s" % iq["id"])
+        elif iq["type"] == "result":
+            logger.debug("we got an iq with result type. The id of this iq is: %s" % iq["id"])
+            t = time.time()
+            queue = ""
+            liststop = []
+            deleted_queue = []
+            for child in iq.xml:
+                if child.tag.endswith("query"):
+                    for z in child:
+                        if z.tag.endswith("data"):
+                            ret = base64.b64decode(bytes(z.tag[1:-5], "utf-8"))
+                            self.iq_msg.set_iq_result(
+                                iq["id"], json.loads(ret.decode("utf-8"))
+                            )
+                            logger.debug(
+                                "The result with the id %s has been injected in the message queue to be processed."
+                                % iq["id"]
+                            )
+                            return ret
+                            try:
+                                strdatajson = base64.b64decode(
+                                    bytes(z.tag[1:-5], "utf-8")
+                                )
+                                data = json.loads(strdatajson.decode("utf-8"))
+                                self.iq_msg.set_iq_result(iq["id"], data["result"])
+                                return data["result"]
+                            except Exception as e:
+                                logging.error("_handle_custom_iq : %s" % str(e))
+                                logger.error("\n%s" % (traceback.format_exc()))
+                                ret = '{"err" : "%s"}' % str(e).replace('"', "'")
+                                self.iq_msg.set_iq_result(ret, ret)
+                                return ret
+                            ret = "{}"
+                            # quposix.send(ret, 2)
+                            self.iq_msg.set_iq_result(iq["id"], ret)
+                            return ret
+        else:
+            # ... This will capture error responses too
+            logger.debug("REV IQ OTHRER TYPE REQUEST")
+            ret = "{}"
+            return ret
+            pass
+
+    # ------------------------------------------------------------------
+    # ------------------ Getion connection agent -----------------------
+    # ------------------------------------------------------------------
+
+    def Mode_Marche_Arret_complet_arret_program(self, pidprogrammprincipal):
+        if sys.platform.startswith("linux") or sys.platform.startswith("darwin"):
+            logging.debug("END PROGRAMM")
+            for p in processes:
+                p.terminate()
+            cmd = "kill -s kill %s" % pidprogrammprincipal
+            result = simplecommand(cmd)
+        elif sys.platform.startswith("win"):
+            logging.error("TERMINATE PROGRAMM ON CTRL+C")
+            logging.debug("END PROGRAMM")
+            for p in processes:
+                p.terminate()
+            cmd = "taskkill /F /PID %s" % pidprogrammprincipal
+            result = simplecommand(cmd)
+
+    def Mode_Marche_Arret_loop(
+        self, nb_reconnect=None, forever=False, timeout=None, type_machine="relayserver"
+    ):
+        """
+        Connect to the XMPP server and start processing XMPP stanzas.
+        """
+        try:
+            self.readconfig_Marche_Arret
+        except:
+            self.readconfig_Marche_Arret = True
+        try:
+            logger.debug("Mode_Marche_Arret_loop")
+            if nb_reconnect:
+                self.startdata = nb_reconnect
+            else:
+                self.startdata = 1
+            while self.startdata > 0:
+                for _ in range(4):
+                    logger.debug("START loop Mode_Marche_Arret_loop")
+                if self.readconfig_Marche_Arret:
+                    logger.debug("on relit la configuration")
+                    # on reli la configuration si voulue
+                    self.config = tgconf(type_machine)
+                    # self.config = confParameter(self.fileconf)
+                self.address = (ipfromdns(self.config.Server), int(self.config.Port))
+                logger.error(
+                    "Mode_Marche_Arret_loop self.address %s" % (str(self.address))
+                )
+                logger.debug(
+                    "try connection (%s) %s " % (self.startdata, str(self.address))
+                )
+                logger.debug("forever (%s) %s " % (forever, timeout))
+                ctrlC = self.Mode_Marche_Arret_connect(forever=forever, timeout=timeout)
+                if ctrlC:  # ctrl+c on quit
+                    return False
+                if self.brestartbot:
+                    return True  # reinitialise agent
+                if nb_reconnect:
+                    self.startdata = self.startdata - 1
+                logger.debug("Next reconect Mode_Marche_Arret_loop")
+        except Exception:
+            logger.error("Mode_Marche_Arret_loop\n%s" % (traceback.format_exc()))
+        return False  # False quit agent xmpp
+
+    def restartBot(self, wait=10):
+        """
+        on relance xmpp dans agent
+        il relit la conf...
+        """
+        logging.log(DEBUGPULSE, "RESTART BOOT")
+        self.brestartbot = True  # boucle reinitialise.
+        # setgetrestart(1)
+        logging.log(DEBUGPULSE, "restart xmpp agent %s!" % self.boundjid.user)
+        self.disconnect(wait=wait)  # on provoque 1 connection default
+
+    def quit_application(self, wait=2):
+        logging.log(DEBUGPULSE, "Quit Application")
+        setgetrestart(0)
+        self.disconnect(wait=wait)
+
+    def handle_connection_failed(self, data):
+        """
+        on connection failed on libere la connection
+        a savoir apres "CONNECTION FAILED"
+        il faut reinitialiser adress et port de connection.
+        """
+        logger.error("CONNECTION FAILED")
+        # event_loop.close()
+        if self.brestartbot:
+            # on force 1 restart bot xmpp
+            self.startdata = -1
+            self.readconfig_Marche_Arret = True
+            self.set_connect_loop_wait(3)
+            self.disconnect()
+            self.loop.stop()
+            return
+        if self.config.agenttype in ["relayserver"]:
+            self.set_connect_loop_wait(3)
+            self.disconnect()
+            self.readconfig_Marche_Arret = False
+            self.loop.stop()
+        else:
+            self.disconnect()
+            if not self.alternatifconnection:
+                # load alternative connection
+                namefilealternatifconnection = conffilename("cluster")
+                if os.path.isfile(namefilealternatifconnection):
+                    # il y a une configuration alternative
+                    logger.debug(
+                        "Machine in cluster ars : analyse alternative alternative connection"
+                    )
+                    logger.debug("file %s" % conffilename("cluster"))
+                    logger.debug("alternative configuration")
+                    self.alternatifconnection = (
+                        nextalternativeclusterconnectioninformation(
+                            namefilealternatifconnection
+                        )
+                    )
+                # self.startmode = False # on charge alternative connection 1 seule fois
+            # search alternatif connection
+            if self.alternatifconnection:
+                self.alternatifconnection["nextserver"] = (
+                    self.alternatifconnection["nextserver"] + 1
+                )
+                if (
+                    self.alternatifconnection["nextserver"]
+                    > self.alternatifconnection["nbserver"]
+                ):
+                    self.alternatifconnection["nextserver"] = 1
+                    # reconfiguraton a refaire
+                    # recharge
+                    # on donne le temps de recevoir nouvelle configuration
+                    self.set_connect_loop_wait(60)
+                    # recupere new connection
+                    arsconnection = self.alternatifconnection["listars"][
+                        self.alternatifconnection["nextserver"] - 1
+                    ]
+                    self.config.Port = self.alternatifconnection[arsconnection]["port"]
+                    self.config.Server = self.alternatifconnection[arsconnection][
+                        "server"
+                    ]
+                    self.config.guacamole_baseurl = self.alternatifconnection[
+                        arsconnection
+                    ]["guacamole_baseurl"]
+                    serverjid = arsconnection
+                    try:
+                        self.config.confdomain = (
+                            str(arsconnection).split("@")[1].split("/")[0]
+                        )
+                    except BaseException:
+                        self.config.confdomain = str(serverjid)
+                    changeconnection(
+                        conffilename(self.config.agenttype),
+                        self.config.Port,
+                        ipfromdns(self.config.Server),
+                        arsconnection,
+                        self.config.guacamole_baseurl,
+                    )
+                    self.address = (
+                        ipfromdns(self.config.Server),
+                        int(self.config.Port),
+                    )
+                    # on reconf mais on est dans 1 phase de restart
+                    self.reconfagent(restatbot=False, force_full_registration=True)
+                    # on recharge la configuration
+                    self.readconfig_Marche_Arret = True
+                else:
+                    self.readconfig_Marche_Arret = False
+                    arsconnection = self.alternatifconnection["listars"][
+                        self.alternatifconnection["nextserver"] - 1
+                    ]
+                    self.config.Port = self.alternatifconnection[arsconnection]["port"]
+                    self.config.Server = self.alternatifconnection[arsconnection][
+                        "server"
+                    ]
+                    self.config.guacamole_baseurl = self.alternatifconnection[
+                        arsconnection
+                    ]["guacamole_baseurl"]
+                    self.readconfig_Marche_Arret = False
+                    changeconnection(
+                        conffilename(self.config.agenttype),
+                        self.config.Port,
+                        ipfromdns(self.config.Server),
+                        arsconnection,
+                        self.config.guacamole_baseurl,
+                    )
+
+                    self.address = (
+                        ipfromdns(self.config.Server),
+                        int(self.config.Port),
+                    )
+
+    def Mode_Marche_Arret_connect(self, forever=False, timeout=10):
+        """
+        a savoir apres "CONNECTION FAILED"
+        il faut reinitialiser address et port de connection.
+        outquit False reconnect
+        """
+        ctrlC = False
+        try:
+            self.connect(address=self.address)
+            self.process(forever=False)
+            ctrlC = False
+        except RuntimeError as error:
+            ctrlC = False
+        except KeyboardInterrupt as error:
+            self.startdata = -1
+            ctrlC = True
+        return ctrlC
+
+    def Mode_Marche_Arret_nb_reconnect(self, nb_reconnect):
+        self.startdata = nb_reconnect
+
+    def Mode_Marche_Arret_terminate(self):
+        self.startdata = 0
+        self.disconnect()
+
+    def Mode_Marche_Arret_stop_agent(self, time_stop=5):
+        self.startdata = 0
+        self.set_connect_loop_wait(-1)
+        self.disconnect(wait=time_stop)
+
+    def handle_connecting(self, data):
+        """
+        success connecting agent
+        """
+        pass
+
+    def get_connect_loop_wait(self):
+        # connect_loop_wait in "xmlstream: make connect_loop_wait private"
+        # cf commit d3063a0368503
+        try:
+            self._connect_loop_wait
+            return self._connect_loop_wait
+        except AttributeError:
+            return self.connect_loop_wait
+
+    def set_connect_loop_wait(self, int_time):
+        # connect_loop_wait in "xmlstream: make connect_loop_wait private"
+        # cf commit d3063a0368503
+        try:
+            self._connect_loop_wait
+            self._connect_loop_wait = int_time
+        except AttributeError:
+            self.connect_loop_wait = int_time
+
+    def handle_disconnected(self, data):
+        # self.set_connect_loop_wait(2)
+        logger.debug("Reconection in %s" % self.get_connect_loop_wait())
+        # self.disconnect()
+
+    async def register(self, iq):
+        """
+        Fill out and submit a registration form.
+
+        The form may be composed of basic registration fields, a data form,
+        an out-of-band link, or any combination thereof. Data forms and OOB
+        links can be checked for as so:
+
+        if iq.match('iq/register/form'):
+            # do stuff with data form
+            # iq['register']['form']['fields']
+        if iq.match('iq/register/oob'):
+            # do stuff with OOB URL
+            # iq['register']['oob']['url']
+
+        To get the list of basic registration fields, you can use:
+            iq['register']['fields']
+        """
+        resp = self.Iq()
+        resp['type'] = 'set'
+        resp['register']['username'] = self.boundjid.user
+        resp['register']['password'] = self.password
+
+        try:
+            await resp.send()
+            logging.info("Account created for %s!" % self.boundjid)
+        except IqError as e:
+            logging.error("Could not register account: %s" %
+                    e.iq['error']['text'])
+            self.disconnect()
+        except IqTimeout:
+            logging.error("No response from server.")
+            self.disconnect()
+
+    # -----------------------------------------------------------------------
+    # --------------------- END Gestion connection agent ---------------------
+    # -----------------------------------------------------------------------
+
     def QDeployfile(self):
         sessioniddata = getRandomName(6, "Qdeployfile")
         dataerreur = {
@@ -1336,9 +1763,6 @@ class MUCBot(slixmpp.ClientXMPP):
             dataerreur,
         )
 
-    ###############################################################
-    # syncthing function
-    ###############################################################
     # syncthing function
     def is_exist_folder_id(self, idfolder, config):
         for folder in config["folders"]:
@@ -1944,53 +2368,7 @@ class MUCBot(slixmpp.ClientXMPP):
                             mtype="chat",
                         )
 
-    # def _handle_custom_iq(self, iq):
-    # if iq["type"] == "get":
-    # for child in iq.xml:
-    # if child.tag.endswith("query"):
-    # for z in child:
-    # data = z.tag[1:-5]
-    # try:
-    # data = base64.b64decode(data)
-    # except Exception as e:
-    # logging.error(
-    # "_handle_custom_iq : decode base64 : %s" % str(e)
-    # )
-    # logger.error("\n%s" % (traceback.format_exc()))
-    # return
-    # try:
-    ## traitement de la function
-    ## result json str
-    # result = dispach_iq_command(self, data)
-    # try:
-    # result = result.encode("base64")
-    # except Exception as e:
-    # logging.error(
-    # "_handle_custom_iq : encode base64 : %s" % str(e)
-    # )
-    # logger.error("\n%s" % (traceback.format_exc()))
-    # return ""
-    # except Exception as e:
-    # logging.error(
-    # "_handle_custom_iq : error function : %s" % str(e)
-    # )
-    # logger.error("\n%s" % (traceback.format_exc()))
-    # return
-    ## retourn result iq get
-    # for child in iq.xml:
-    # if child.tag.endswith("query"):
-    # for z in child:
-    # z.tag = "{%s}data" % result
-    # iq["to"] = iq["from"]
-    # iq.reply(clear=False)
-    # iq.send()
-    # elif iq["type"] == "set":
-    # pass
-    # else:
-    # pass
-
-    ########################################################
-    ################## manage levelcharge ##################
+    # Manage levelcharge
     def checklevelcharge(self, ressource=0):
         self.levelcharge["charge"] = self.levelcharge["charge"] + ressource
         if self.levelcharge["charge"] < 0:
@@ -2010,8 +2388,6 @@ class MUCBot(slixmpp.ClientXMPP):
                 del self.levelcharge["machinelist"][index]
                 # self.checklevelcharge(ressource = -1)
         self.levelcharge["charge"] = len(self.levelcharge["machinelist"])
-
-    ########################################################
 
     def signal_handler(self, signal, frame):
         logging.log(DEBUGPULSE, "CTRL-C EVENT")
@@ -2154,8 +2530,6 @@ class MUCBot(slixmpp.ClientXMPP):
             q.put("action missing in jsopn Message console %s" % (dataobj))
             return
 
-    ##################
-
     def remove_sessionid_in_ban_deploy_sessionid_list(self):
         """
         this function remove sessionid banned
@@ -2271,7 +2645,6 @@ class MUCBot(slixmpp.ClientXMPP):
                 return asyncio.get_event_loop()
 
     async def start(self, event):
-        logger.debug("function start")
         self.datas_send = []
         await self.get_roster()
         self.send_presence()
@@ -2904,31 +3277,6 @@ class MUCBot(slixmpp.ClientXMPP):
                 else:
                     logger.warning("ask update but descriptor_agent base missing.")
 
-    # def register(self, iq):
-    # """This function is called for automatic registation"""
-    # resp = self.Iq()
-    # resp["type"] = "set"
-    # resp["register"]["username"] = self.boundjid.user
-    # resp["register"]["password"] = self.password
-    # try:
-    # resp.send(now=True)
-    # logging.info("Account created for %s!" % self.boundjid)
-    # except IqError as e:
-    # if e.iq["error"]["code"] == "409":
-    # logging.warning(
-    # "Could not register account %s : User already exists"
-    #% resp["register"]["username"]
-    # )
-    # else:
-    # logging.error(
-    # "Could not register account %s : %s"
-    #% (resp["register"]["username"], e.iq["error"]["text"])
-    # )
-    # except IqTimeout:
-    # logging.error("No response from server.")
-    # logger.error("\n%s" % (traceback.format_exc()))
-    # self.disconnect()
-
     def filtre_message(self, msg):
         pass
 
@@ -3162,11 +3510,6 @@ class MUCBot(slixmpp.ClientXMPP):
         er = networkagentinfo("master", "infomachine")
         er.messagejson["info"] = self.config.information
         # send key public agent
-        # a=self.RSA.loadkeypublictobase64()
-        # a=self.RSA.loadkeypublic()
-        # logging.error("JFKJFK type %s" %type(a))
-        # er.messagejson["publickey"] = a
-
         er.messagejson["publickey"] = self.RSA.get_key_public()
         er.messagejson["publickeyname"] = self.RSA.get_name_key()[0]
         er.messagejson["privatekeyname"] = self.RSA.get_name_key()[1]
@@ -3307,12 +3650,14 @@ AGENT %s ERROR TERMINATE""" % (
                     dataobj["packageserver"]["public_ip"] = self.config.ipxmpp
         except Exception:
             dataobj["moderelayserver"] = "static"
-        ###################Update agent from MAster############################
+
+        # Update agent from master
         if self.config.updating == 1:
             dataobj["md5agent"] = Update_Remote_Agent(
                 self.pathagent, True
             ).get_fingerprint_agent_base()
-        ###################End Update agent from MAster########################
+        # End Update agent from master
+
         # TODO: determination lastusersession to review
         lastusersession = ""
         userlist = list({users[0] for users in psutil.users()})
@@ -3521,7 +3866,6 @@ def tgconf(optstypemachine):
         time.sleep(2)
     return tg
 
-
 def servercherrypy(
     optstypemachine,
     optsconsoledebug,
@@ -3617,7 +3961,6 @@ def servercherrypy(
 
         server1.subscribe()
         cherrypy.engine.start()
-
 
 def doTask(
     optstypemachine,
@@ -3737,9 +4080,6 @@ def doTask(
         tglevellog,
         tglogfile,
     )
-    logger.info("start process cherrypy")
-
-    logger.info("JFK JFK cherrypy.engine.start()")
     if sys.platform.startswith("linux") or sys.platform.startswith("darwin"):
         # completing process
         try:
@@ -3777,6 +4117,7 @@ def doTask(
                 p.terminate()
             cmd = "kill -s kill %s" % os.getpid()
             result = simplecommand(cmd)
+
     elif sys.platform.startswith("win"):
         try:
             # time.sleep(30)
@@ -3795,6 +4136,32 @@ def doTask(
                 processwin = json.dumps(dd.pidlist(), indent=4)
                 file_put_contents(windowfilepid, "%s" % processwin)
                 logging.debug("Process agent list : %s" % processwin)
+                # list python process
+                lpidsearch = []
+                for k, v in dd.get_pid().iteritems():
+                    if "python.exe" in v:
+                        lpidsearch.append(int(k))
+                logging.debug("Process python list : %s" % lpidsearch)
+                for pr in processes:
+                    logging.debug("search %s in %s" % (pr.pid, lpidsearch))
+                    if pr.pid not in lpidsearch:
+                        logging.debug(
+                            "Process %s pid %s is missing %s"
+                            % (pr.name, pr.pid, lpidsearch)
+                        )
+                        for p in processes:
+                            p.terminate()
+                        logging.debug("END PROGRAMM")
+                        cmd = "taskkill /F /PID %s" % os.getpid()
+                        result = simplecommand(cmd)
+                        break
+        except KeyboardInterrupt:
+            logging.error("TERMINATE PROGRAMM ON CTRL+C")
+            logging.debug("END PROGRAMM")
+            for p in processes:
+                p.terminate()
+            cmd = "taskkill /F /PID %s" % os.getpid()
+            result = simplecommand(cmd)
                 # list python process
                 lpidsearch = []
                 for k, v in dd.get_pid().iteritems():
@@ -3885,7 +4252,6 @@ class process_xmpp_agent:
 
         self.process_restartbot = True
         while self.process_restartbot:
-            # if xmpp.config.agenttype in ["relayserver"]:
             # self.restartbot = False
             self.process_restartbot = False
             self.logger.debug(
@@ -3910,7 +4276,6 @@ class process_xmpp_agent:
                 eventkillpipe,
                 self.pidprogrammprincipal,
             )
-
             xmpp.auto_reconnect = False
             xmpp.register_plugin("xep_0030")  # Service Discovery
             xmpp.register_plugin("xep_0045")  # Multi-User Chat
@@ -3976,7 +4341,6 @@ class process_agent_search:
     def is_win_process_num(self):
         self.pidlist()
         return self.numprocess_pid()
-
 
 if __name__ == "__main__":
     if sys.platform.startswith("linux") and os.getuid() != 0:

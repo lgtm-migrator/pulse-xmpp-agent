@@ -41,7 +41,6 @@ import traceback
 if sys.platform.startswith("win"):
     import wmi
 
-
 logger = logging.getLogger()
 
 

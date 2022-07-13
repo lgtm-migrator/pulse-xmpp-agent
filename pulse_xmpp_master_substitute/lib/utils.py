@@ -553,6 +553,7 @@ def loadModule(filename):
         sys.path.append(searchPath)
         sys.path.append(os.path.normpath(searchPath + "/../"))
     moduleName, ext = os.path.splitext(file)
+
     try:
         fp, pathName, description = imp.find_module(
             moduleName,
@@ -561,12 +562,15 @@ def loadModule(filename):
             ],
         )
     except Exception:
-        logger.error("\n%s" % (traceback.format_exc()))
+        logger.error("We hit a backtrace when searching for Modules")
+        logger.error("We got the backtrace\n%s" % (traceback.format_exc()))
         return None
+
     try:
         module = imp.load_module(moduleName, fp, pathName, description)
     except Exception:
-        logger.error("\n%s" % (traceback.format_exc()))
+        logger.error("We hit a backtrace when loading Modules")
+        logger.error("We got the backtrace \n%s" % (traceback.format_exc()))
     finally:
         if fp:
             fp.close()
@@ -1710,9 +1714,10 @@ def is_connectedServer(ip, port):
 class AESCipher:
     def __init__(self, key, BS=32):
         if isinstance(key, str):
-            self.key = key.encode('utf-8')
+            self.key = key.encode("utf-8")
         else:
-            self.key = key # self.key is bytes
+            self.key = key  # self.key is bytes
+
         self.BS = BS
 
     def _bchr(self, s):
@@ -1722,8 +1727,8 @@ class AESCipher:
         return s
 
     def pad(self, data_to_pad):
-        padding_len = self.BS-len(data_to_pad)%self.BS
-        padding = self._bchr(padding_len)*padding_len
+        padding_len = self.BS - len(data_to_pad) % self.BS
+        padding = self._bchr(padding_len) * padding_len
         return data_to_pad + padding
 
     def encrypt_base64_byte(self, raw):
@@ -1731,19 +1736,19 @@ class AESCipher:
             raw = raw.encode("utf-8")
         iv = Random.new().read(AES.block_size)
         cipher = AES.new(self.key, AES.MODE_CBC, iv)
-        result= iv + cipher.encrypt(self.pad(raw))
+        result = iv + cipher.encrypt(self.pad(raw))
         return base64.b64encode(result)
 
     def encrypt(self, raw):
-        return self.encrypt_base64_byte(raw).decode('utf-8')
+        return self.encrypt_base64_byte(raw).decode("utf-8")
 
     def decrypt(self, enc):
         if isinstance(enc, str):
             enc = enc.encode("utf-8")
         enc = base64.b64decode(enc)
-        iv = enc[:AES.block_size]
+        iv = enc[: AES.block_size]
         cipher = AES.new(self.key, AES.MODE_CBC, iv)
-        return self._unpad(cipher.decrypt(enc[AES.block_size:]))
+        return self._unpad(cipher.decrypt(enc[AES.block_size :]))
 
     def decrypt_base64_byte(self, enc):
         return self.decrypt_base64_str(enc).encode("utf-8")
@@ -1751,7 +1756,6 @@ class AESCipher:
     def _unpad(self, s):
         dtrdata = s[:-ord(s[len(s)-1:])]
         return dtrdata.decode("utf-8")
-
 
 def sshdup():
     if sys.platform.startswith("linux"):
@@ -2766,8 +2770,6 @@ class base_message_queue_posix(Singleton):
         base_message_queue_posix.file_reponse_iq = listqueue
 
     def clean_file_all_message(self, prefixe=""):
-        logger.debug("clean_file_all_message base_message_queue_posix.file_reponse_iq")
-
         listqueue = []
         for fmp in base_message_queue_posix.file_reponse_iq:
             if fmp["time"] == -1:
