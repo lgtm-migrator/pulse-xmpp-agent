@@ -914,57 +914,6 @@ class MUCBot(slixmpp.ClientXMPP):
             queue = ""
             liststop = []
             dellqueue = []
-
-            # logger.debug("time ref %s" % t)
-            # for ta in self.datas_send:
-            # logger.debug("On Traite %s" % ta['name_iq_queue'])
-            # logger.debug("time fin %s " % (ta['time']) )
-            # logger.debug("time now %s " % (t) )
-            # logger.debug("sessioniq %s" % ta['sesssioniq'])
-            # if ta['time'] < t:
-            # logger.debug("timeout queu %s" % ta['name_iq_queue'])
-            # dellqueue.append(ta['name_iq_queue'])
-            # continue
-            # if ta['sesssioniq'] == iq['id']:
-            # queue = ta['name_iq_queue']
-            # logger.debug("TRAITEMENT RESULT IN _handle_custom_iq %s" % ta['name_iq_queue'])
-            # liststop.append(ta)
-            # self.datas_send=liststop
-            # logger.debug("list de queue pendante a supprimer %s" % dellqueue)
-            ## dellete les queues terminees
-            ## on supprime les ancienne liste.
-            # for ta in dellqueue:
-            # try:
-            # logger.debug("delete queue %s" % ta['name_iq_queue'])
-            # posix_ipc.unlink_message_queue(ta['name_iq_queue'])
-            # except:
-            # pass
-            # if not queue:
-            ## pas de message recu return
-            # logger.debug("pas de queue trouver on quitte")
-            # return
-            # else:
-            # logger.debug("QUEUE DEFINIE POUR SORTIE")
-            # queue existe pour le resultat
-            # creation ou ouverture de queues
-            # try:
-            # logger.debug("essai de creer queue %s" % queue)
-            # quposix = posix_ipc.MessageQueue(
-            # queue,
-            # posix_ipc.O_CREX,
-            # max_message_size=2097152
-            # )
-            # logger.debug("create queue  pour envoi du result %s" % queue)
-            # except posix_ipc.ExistentialError:
-            # logger.debug("essai ouvrir queue %s" % queue)
-            # quposix = posix_ipc.MessageQueue(queue)
-            # logger.debug("open queue %s" % queue)
-            # except OSError as e:
-            # logger.error("ERROR CREATE QUEUE POSIX %s" % e)
-            # logger.error("eg : admin (/etc/security/limits.conf and  /etc/sysctl.conf")
-            # except Exception as e:
-            # logger.error("exception %s" % e)
-            # logger.error("\n%s"%(traceback.format_exc()))
             for child in iq.xml:
                 if child.tag.endswith("query"):
                     for z in child:
@@ -985,25 +934,6 @@ class MUCBot(slixmpp.ClientXMPP):
                                 "Result inject to maintenant traitable dans la boucle attente iq_msg %s"
                                 % (iq["id"])
                             )
-                            return ret
-                            try:
-                                strdatajson = base64.b64decode(
-                                    bytes(z.tag[1:-5], "utf-8")
-                                )
-                                data = json.loads(strdatajson.decode("utf-8"))
-                                # quposix.send(data['result'], 2)
-                                self.iq_msg.set_iq_result(iq["id"], data["result"])
-                                return data["result"]
-                            except Exception as e:
-                                logging.error("_handle_custom_iq : %s" % str(e))
-                                logger.error("\n%s" % (traceback.format_exc()))
-                                ret = '{"err" : "%s"}' % str(e).replace('"', "'")
-                                # quposix.send(ret, 2)
-                                self.iq_msg.set_iq_result(ret, ret)
-                                return ret
-                            ret = "{}"
-                            # quposix.send(ret, 2)
-                            self.iq_msg.set_iq_result(iq["id"], ret)
                             return ret
         else:
             # ... This will capture error responses too
