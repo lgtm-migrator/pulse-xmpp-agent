@@ -23,6 +23,9 @@
 # file : pulse_xmpp_master_substitute/lib/utils.py
 #
 
+"""
+    This file contains shared functions use in pulse client/server agents.
+"""
 
 import netifaces
 import json
@@ -38,8 +41,7 @@ import traceback
 from pprint import pprint
 import hashlib
 import base64
-import urllib.request, urllib.parse, urllib.error
-import urllib.request, urllib.error, urllib.parse
+import urllib.request
 import pickle
 from .agentconffile import conffilename
 import configparser
@@ -100,8 +102,8 @@ class Env(object):
             )
         if Env.agenttype == "relayserver":
             return os.path.join("/", "var", "lib", "pulse2")
-        else:
-            return os.path.expanduser("~pulseuser")
+
+        return os.path.expanduser("~pulseuser")
 
 
 # debug decorator
@@ -189,10 +191,13 @@ def dump_parameter(para=True, out=True, timeprocess=True):
 
 def Setdirectorytempinfo():
     """
-    This functions create a temporary directory.
+    This function is used to obtain the path to the temporary directory used
+    by the agent to store informations like network or configuration fingerprints.
+
 
     Returns:
-    path directory INFO Temporaly and key RSA
+        It returns the path to the temporary directory.
+
     """
     dirtempinfo = os.path.join(os.path.dirname(os.path.realpath(__file__)), "INFOSTMP")
     if not os.path.exists(dirtempinfo):
@@ -214,6 +219,14 @@ def cleanbacktodeploy(objectxmpp):
 
 
 def networkinfoexist():
+    """
+    This function is used to check that the fingerprintnetwork folder
+    exists.
+
+    Returns:
+        True if the file exists
+        False if the file does not exists
+    """
     filenetworkinfo = os.path.join(Setdirectorytempinfo(), "fingerprintnetwork")
     if os.path.exists(filenetworkinfo):
         return True
@@ -360,6 +373,19 @@ def confinfoexist():
 
 
 def confchanged(typeconf):
+    """
+    This function is used to know if the configuration changed.
+
+    If the checked file does not exist or if the fingerprint have
+    changed we consider that the configuration changed.
+
+    We check the fingerprint between the old saved configuration
+    which is stored in the `fingerprintconf` variable.
+
+    Returns:
+        True if we consider that the configuration changed
+        False if we consider that the configuration has not changed
+    """
     if confinfoexist():
         fingerprintconf = file_get_contents(
             os.path.join(Setdirectorytempinfo(), "fingerprintconf")
@@ -367,6 +393,7 @@ def confchanged(typeconf):
         newfingerprintconf = createfingerprintconf(typeconf)
         if newfingerprintconf == fingerprintconf:
             return False
+
     return True
 
 
@@ -377,6 +404,18 @@ def refreshfingerprintconf(typeconf):
 
 
 def networkchanged():
+    """
+    This function is used to know if the network changed.
+
+    If the checked file does not exist or if the fingerprint have
+    changed we consider that the network changed.
+
+    A network change means that the interfaces changed ( new or deleted )
+
+    Returns:
+        True if we consider that the network changed
+        False if we consider that the network has not changed
+    """
     if networkinfoexist():
         fingerprintnetwork = file_get_contents(
             os.path.join(Setdirectorytempinfo(), "fingerprintnetwork")
@@ -384,8 +423,8 @@ def networkchanged():
         newfingerprint = createfingerprintnetwork()
         if fingerprintnetwork == newfingerprint:
             return False
-    else:
-        return True
+
+    return True
 
 
 def refreshfingerprint():
@@ -1561,28 +1600,49 @@ def isBase64(s):
 
 def decode_strconsole(x):
     """
-    input str decode to default coding python(# -*- coding: utf-8; -*-)
+    Decode strings into the format used on the OS.
+    Supported OS are: linux, windows and darwin
+
+    Args:
+        x: the string we want to encode
+
+    Returns:
+        The decoded `x` string
     """
     if sys.platform.startswith("linux"):
         return x.decode("utf-8", "ignore")
-    elif sys.platform.startswith("win"):
-        return x.decode("cp850", "ignore")
-    elif sys.platform.startswith("darwin"):
-        return x.decode("utf-8", "ignore")
-    else:
-        return x
 
+    if sys.platform.startswith("win"):
+        return x.decode("cp850", "ignore")
+
+    if sys.platform.startswith("darwin"):
+        return x.decode("utf-8", "ignore")
+
+    return x
 
 def encode_strconsole(x):
-    """output str encode to coding other system"""
+    """
+    Encode strings into the format used on the OS.
+    Supported OS are: linux, windows and darwin
+
+    Args:
+        x: the string we want to encode
+
+    Returns:
+        The encoded `x` string
+    """
+
+
     if sys.platform.startswith("linux"):
         return x.encode("utf-8")
-    elif sys.platform.startswith("win"):
+
+    if sys.platform.startswith("win"):
         return x.encode("cp850")
-    elif sys.platform.startswith("darwin"):
+
+    if sys.platform.startswith("darwin"):
         return x.encode("utf-8")
-    else:
-        return x
+
+    return x
 
 
 def savejsonfile(filename, data, indent=4):
@@ -1813,13 +1873,13 @@ def sshdup():
         if result["code"] == 0:
             return True
         return False
-    elif sys.platform.startswith("darwin"):
+    if sys.platform.startswith("darwin"):
         cmd = "launchctl list com.openssh.sshd"
         result = simplecommand(cmd)
         if result["code"] == 0:
             return True
         return False
-    elif sys.platform.startswith("win"):
+    if sys.platform.startswith("win"):
         cmd = "TASKLIST | FINDSTR sshd"
         result = simplecommand(cmd)
         if len(result["result"]) > 0:
@@ -1833,11 +1893,11 @@ def restartsshd():
         if not sshdup():
             cmd = "systemctrl restart sshd"
             result = simplecommand(cmd)
-    elif sys.platform.startswith("darwin"):
+    if sys.platform.startswith("darwin"):
         if not sshdup():
             cmd = "launchctl restart /System/Library/LaunchDaemons/ssh.plist"
             result = simplecommand(cmd)
-    elif sys.platform.startswith("win"):
+    if sys.platform.startswith("win"):
         if not sshdup():
             # on cherche le nom reel du service pour sshd.
             cmd = 'sc query state= all | findstr "sshd" | findstr "SERVICE_NAME"'
@@ -2225,8 +2285,8 @@ def get_user_profile(username="pulseuser"):
     result = simplecommand(encode_strconsole(check_profile_cmd))
     if result["code"] == 0 and result["result"]:
         return result["result"][0]
-    else:
-        return ""
+
+    return ""
 
 
 def get_user_sid(username="pulseuser"):
@@ -2435,9 +2495,9 @@ def reversessh_useraccount_mustexist_on_relay(username="reversessh"):
     if result["code"] == 0:
         msg = "Creation of %s user account successful: %s" % (username, result)
         return True, msg
-    else:
-        msg = "Creation of %s user account failed: %s" % (username, result)
-        return False, msg
+
+    msg = "Creation of %s user account failed: %s" % (username, result)
+    return False, msg
 
 
 def reversessh_keys_mustexist_on_relay(username="reversessh"):
@@ -2589,21 +2649,13 @@ class geolocalisation_agent:
                 self.determination = True
                 self.setdatafilegeolocalisation()
                 return self.localisation
-            else:
-                if self.localisation is not None:
-                    if not self.geoinfoexist():
-                        self.setdatafilegeolocalisation()
-                        self.determination = False
-                    return self.localisation
-                elif not self.geoinfoexist():
-                    self.localisation = geolocalisation_agent.searchgeolocalisation(
-                        self.listgeoserver
-                    )
+
+            if self.localisation is not None:
+                if not self.geoinfoexist():
                     self.setdatafilegeolocalisation()
-                    self.determination = True
-                    return self.localisation
-            return None
-        else:
+                    self.determination = False
+                return self.localisation
+
             if not self.geoinfoexist():
                 self.localisation = geolocalisation_agent.searchgeolocalisation(
                     self.listgeoserver
@@ -2611,6 +2663,16 @@ class geolocalisation_agent:
                 self.setdatafilegeolocalisation()
                 self.determination = True
                 return self.localisation
+
+            return None
+
+        if not self.geoinfoexist():
+            self.localisation = geolocalisation_agent.searchgeolocalisation(
+                self.listgeoserver
+            )
+            self.setdatafilegeolocalisation()
+            self.determination = True
+            return self.localisation
 
         return self.localisation
 
