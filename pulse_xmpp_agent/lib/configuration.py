@@ -288,7 +288,24 @@ class confParameter:
     def __init__(self, typeconf='machine'):
         Config = ConfigParser.ConfigParser()
         namefileconfig = conffilename(typeconf)
-        Config.read(namefileconfig)
+        templatefile = conffilename("template")
+        try:
+            Config.read(namefileconfig)
+        except (ConfigParser.MissingSectionHeaderError, ConfigParser.NoSectionError):
+            logger.error('The configuration file is empty we cannot continue. We will try to autofix this.')
+            if os.path.exists(templatefile):
+                shutil.copyfile(templatefile, namefileconfig)
+                try:
+                    Config.read(namefileconfig)
+                except Exception:
+                    logger.error("We encountered an unknown error. The error is:")
+                    logger.error("\n%s"%(traceback.format_exc()))
+            else:
+                logger.error("The template file agentconf.ini.tpl is missing. Please add it to have the autofix feature working")
+        except Exception:
+            logger.error("We encountered an unknown error. The error is:")
+            logger.error("\n%s"%(traceback.format_exc()))
+
         if os.path.exists(namefileconfig + ".local"):
             Config.read(namefileconfig + ".local")
         self.packageserver = {}

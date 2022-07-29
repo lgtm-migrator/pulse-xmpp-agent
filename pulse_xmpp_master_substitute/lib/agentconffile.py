@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8; -*-
 #
-# (c) 2016 - 2018 siveo, http://www.siveo.net
+# (c) 2016 - 2022 siveo, http://www.siveo.net
 #
 # This file is part of Pulse 2, http://www.siveo.net
 #
@@ -23,6 +23,9 @@
 import sys
 import os
 
+import logging
+
+logger = logging.getLogger()
 def directoryconffile():
     """
         This function permits to obtain the configuration folder.
@@ -90,10 +93,13 @@ def conffilename(agenttype):
     """
     if agenttype in ["machine"]:
         conffilenameparameter = "agentconf.ini"
+    elif agenttype in ["template"]:
+        conffilenameparameter = "agentconf.ini.tpl"
     elif agenttype in ["cluster"]:
         conffilenameparameter = "cluster.ini"
     else:
         conffilenameparameter = "relayconf.ini"
+
     if sys.platform.startswith('linux'):
         fileconf = os.path.join(
             "/",
@@ -116,10 +122,8 @@ def conffilename(agenttype):
             conffilenameparameter)
     else:
         fileconf = conffilenameparameter
-    if conffilenameparameter == "cluster.ini":
-        return fileconf
-    if os.path.isfile(fileconf):
-        return fileconf
-    else:
-        return conffilenameparameter
 
+    if not os.path.isfile(fileconf):
+        logger.error("The file %s does not exists." % fileconf)
+
+    return fileconf
