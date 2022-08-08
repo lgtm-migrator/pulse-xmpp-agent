@@ -1,9 +1,9 @@
-usr/lib/python3.*/*-packages/pulse_xmpp_master_substitute/agentmastersubstitute.py
-usr/lib/python3.*/*-packages/pulse_xmpp_master_substitute/script
-usr/lib/python3.*/*-packages/pulse_xmpp_master_substitute/agentversion
-usr/lib/python3.*/*-packages/pulse_xmpp_master_substitute/bin
-usr/lib/python3.*/*-packages/pulse_xmpp_master_substitute/lib
-usr/lib/python3.*/*-packages/pulse_xmpp_master_substitute/pluginsmastersubstitute
+usr/lib/python3/*-packages/pulse_xmpp_master_substitute/agentmastersubstitute.py
+usr/lib/python3/*-packages/pulse_xmpp_master_substitute/script
+usr/lib/python3/*-packages/pulse_xmpp_master_substitute/agentversion
+usr/lib/python3/*-packages/pulse_xmpp_master_substitute/bin
+usr/lib/python3/*-packages/pulse_xmpp_master_substitute/lib
+usr/lib/python3/*-packages/pulse_xmpp_master_substitute/pluginsmastersubstitute
 usr/lib/systemd/system/pulse-xmpp-master-substitute-inventory.service
 usr/lib/systemd/system/pulse-xmpp-master-substitute-registration.service
 usr/lib/systemd/system/pulse-xmpp-master-substitute-assessor.service
@@ -11,6 +11,7 @@ usr/lib/systemd/system/pulse-xmpp-master-substitute-subscription.service
 usr/lib/systemd/system/pulse-xmpp-master-substitute-logger.service
 usr/lib/systemd/system/pulse-xmpp-master-substitute-deployment.service
 usr/lib/systemd/system/pulse-xmpp-master-substitute-reconfigurator.service
+usr/lib/systemd/system/pulse-xmpp-master-substitute-master.service
 usr/lib/systemd/system/pulse-xmpp-master-substitute-monitoring.service
 etc/pulse-xmpp-agent-substitute/*.ini
 var/lib/pulse2/script_monitoring

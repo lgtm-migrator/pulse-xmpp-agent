@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8; -*-
 #
-# (c) 2016 siveo, http://www.siveo.net
+# (c) 2016-2022 siveo, http://www.siveo.net
 #
 # This file is part of Pulse 2, http://www.siveo.net
 #
@@ -25,12 +25,8 @@
 
 import sys
 
-if sys.version_info[0] == 3:
-    from configparser import ConfigParser
-    from slixmpp import jid
-else:
-    from configparser import ConfigParser
-    from sleekxmpp import jid
+from configparser import ConfigParser
+from slixmpp import jid
 import netifaces
 import json
 import platform
@@ -145,7 +141,6 @@ def nextalternativeclusterconnectioninformation(conffile):
         conffile: the configuration file to modify
     """
     alternatif_conf = {}
-    logger.error("JFKJFK function nextalternativeclusterconnection")
     if not os.path.isfile(conffile):
         logger.error("file alternatif conf missing %s" % conffile)
         return {}
@@ -354,7 +349,7 @@ class confParameter:
         Config = ConfigParser()
         namefileconfig = conffilename(typeconf)
         if not os.path.isfile(namefileconfig):
-            logger.error("The file %s is missing" % namefileconfig)
+            logger.error("The configuration file %s is missing" % namefileconfig)
 
         Config.read(namefileconfig)
         if os.path.exists(namefileconfig + ".local"):
@@ -427,16 +422,15 @@ class confParameter:
                 if not os.path.exists(path_reconf_nomade):
                     fh = open(path_reconf_nomade, "w")
                     fh.write(
-                        "DO NOT REMOVE \n"
-                        "parameter alwaysnetreconf is True\n "
-                        "it will reconfigure the machine at every start"
+                        "DO NOT REMOVE THIS FILE\n"
+                        "The parameter alwaysnetreconf is set to True\n "
+                        "The agent will reconfigure the machine at every start"
                     )
                     fh.close()
             else:
                 if os.path.exists(path_reconf_nomade):
                     os.remove(path_reconf_nomade)
 
-        # syncthing true or fale
         self.syncthing_on = True
         if self.agenttype == "relayserver":
             self.syncthing_share = "/var/lib/syncthing-depl/depl_share"
@@ -466,8 +460,10 @@ class confParameter:
         if Config.has_option("syncthing-deploy", "syncthing_home"):
             self.syncthing_home = Config.get("syncthing-deploy", "syncthing_home")
 
-        logger.debug("activation syncthing %s" % self.syncthing_on)
-        # SYNCTHING #################
+        if self.syncthing_on:
+            logger.debug("Syncthing have been activated.")
+        else:
+            logger.debug("Syncthing have not been activated by configuration.")
 
         self.moderelayserver = "static"
         if Config.has_option("type", "moderelayserver"):
@@ -478,7 +474,13 @@ class confParameter:
             self.updating = Config.getboolean("updateagent", "updating")
         else:
             self.updating = 1
-        logger.info("updating %s" % self.updating)
+
+        if self.updating:
+            logger.debug("The agent is configured to autoupdate.")
+        else:
+            logger.debug(
+                "The agent will not auto udpdate. Modifications on the server will not be used on this client"
+            )
 
         if Config.has_option("updateagent", "updatingplugin"):
             self.updatingplugin = Config.getboolean("updateagent", "updatingplugin")

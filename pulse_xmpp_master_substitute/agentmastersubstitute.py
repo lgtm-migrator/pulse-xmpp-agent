@@ -161,23 +161,18 @@ def doTask(optsconsoledebug, optsdeamon, optfileconf):
 
 if __name__ == "__main__":
     if sys.platform.startswith("linux") and os.getuid() != 0:
-        print("Agent must be running as root")
+        logger.error("Agent must be running as root")
         sys.exit(0)
     # controle si les key de master sont installer
     dirkey = Setdirectorytempinfo()
     filekeypublic = os.path.join(Setdirectorytempinfo(), "master-public-RSA.key")
-    fileprivatekey = os.path.join(Setdirectorytempinfo(), "master-all-RSA.key")
+    fileprivatekey = os.path.join(Setdirectorytempinfo(), "master-private-RSA.key")
     msgkey = manageRSAsigned.MsgsignedRSA("master")
     if not (os.path.isfile(filekeypublic) and os.path.isfile(fileprivatekey)):
-        print("key missing")
-        print(
-            (
-                "install key of master in \n\t%s\n\t%s\n\n"
-                % (filekeypublic, fileprivatekey)
-            )
-        )
-        print(
-            "find files key on master in file \n\t- /usr/lib/python2.7/dist-packages/mmc/plugins/xmppmaster/master/INFOSTMP/master-public-RSA.key\n\t- /usr/lib/python2.7/dist-packages/mmc/plugins/xmppmaster/master/INFOSTMP/master-private-RSA.key "
+        logger.error("The security keys are missing.")
+        logger.error(
+            "To work correctly we need the following keys: \n - %s \n - %s"
+            % (filekeypublic, fileprivatekey)
         )
         sys.exit(0)
     namefileconfigdefault = os.path.join(

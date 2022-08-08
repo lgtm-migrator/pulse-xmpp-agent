@@ -915,7 +915,6 @@ def typelinux():
     )
     result = p.stdout.readlines()
     system = result[0].rstrip("\n")
-    """renvoi la liste des ip gateway en fonction de l'interface linux"""
     return system
 
 
@@ -1746,7 +1745,6 @@ def shutdown_command(time=0, msg=""):
             cmd = 'shutdown -h +%s "%s"' % (time, msg)
             logging.debug(cmd)
             os.system(cmd)
-    return
 
 
 def vnc_set_permission(askpermission=1):
@@ -1770,8 +1768,6 @@ def vnc_set_permission(askpermission=1):
     elif sys.platform.startswith("darwin"):
         pass
 
-    return
-
 
 def reboot_command():
     """
@@ -1783,7 +1779,6 @@ def reboot_command():
         os.system("shutdown /r")
     elif sys.platform.startswith("darwin"):
         os.system("shutdown -r now")
-    return
 
 
 def isBase64(s):
@@ -3661,7 +3656,7 @@ def base64strencode(data):
 
 class Singleton(object):
     def __new__(type, *args):
-        if not "_the_instance" in type.__dict__:
+        if "_the_instance" not in type.__dict__:
             type._the_instance = object.__new__(type)
         return type._the_instance
 
@@ -3997,7 +3992,7 @@ class file_message_iq:
                     if self.dev_mod:
                         logger.info("iq [%s] in timeout" % (id_iq))
                     return None
-                """ delete les items qui sont en timeout """
+                # delete les items qui sont en timeout
                 self.del_timeout_iq_old()
                 time.sleep(delta_time)
                 logger.warning("start boucle analyse %s" % id_iq)
