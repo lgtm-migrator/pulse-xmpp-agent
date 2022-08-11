@@ -53,6 +53,7 @@ import asyncio
 import random
 from slixmpp.xmlstream.handler import CoroutineCallback
 from slixmpp.xmlstream.matcher.stanzapath import StanzaPath
+from lib import manageRSAsigned
 
 logger = logging.getLogger()
 
@@ -236,7 +237,10 @@ class MUCBot(slixmpp.ClientXMPP):
         self.Mode_Marche_Arret_stop_agent(time_stop=1)
 
     def handle_disconnected(self, data):
-        self.connect_loop_wait = 2
+        logger.debug(
+            "We got disconnected. We will reconnect in %s seconds"
+            % self.get_connect_loop_wait()
+        )
 
     def register(self, iq):
         logging.info("register user %s" % self.boundjid)
