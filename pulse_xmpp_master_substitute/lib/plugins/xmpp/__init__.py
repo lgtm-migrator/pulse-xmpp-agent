@@ -38,6 +38,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
+from sqlalchemy.sql import exists
 from datetime import date, datetime, timedelta
 import pprint
 
@@ -593,7 +594,7 @@ class XmppMasterDatabase(DatabaseHelper):
             return resultlist
         except Exception as e:
             logging.getLogger().error(str(e))
-            logging.getLogger().error("fn Timeouterrordeploy on sql %s"(sql))
+            logging.getLogger().error("fn Timeouterrordeploy on sql %s" % sql)
 
             return resultlist
 
@@ -1490,33 +1491,6 @@ class XmppMasterDatabase(DatabaseHelper):
             return 1
         except Exception as e:
             logging.getLogger().debug("updateMachines error %s->" % str(e))
-            return -1
-
-    @DatabaseHelper._sessionm
-    def updateName_Qa_custom_command(
-        self, session, user, osname, namecmd, customcmd, description
-    ):
-        """
-        update updateName_Qa_custom_command
-        """
-
-        try:
-            session.query(Qa_custom_command).filter(
-                Qa_custom_command.namecmd == namecmd
-            ).update(
-                {
-                    Qa_custom_command.customcmd: customcmd,
-                    Qa_custom_command.description: description,
-                    Qa_custom_command.os: osname,
-                }
-            )
-            session.commit()
-            session.flush()
-            return 1
-        except Exception as e:
-            logging.getLogger().debug(
-                "updateName_Qa_custom_command error %s->" % str(e)
-            )
             return -1
 
     @DatabaseHelper._sessionm
@@ -3818,9 +3792,7 @@ class XmppMasterDatabase(DatabaseHelper):
             else:
                 new_logincommand.syncthing = True
             try:
-                if (isinstance(params, list) or isinstance(params, dict)) and len(
-                    params
-                ) != 0:
+                if isinstance(params, (list, dict)) and len(params) != 0:
                     new_logincommand.params_json = json.dumps(params)
             except Exception as e:
                 logging.getLogger().error(
@@ -8214,6 +8186,15 @@ class XmppMasterDatabase(DatabaseHelper):
     def _template_python_string_event(self, python_dict):
         # creation string parameter for bash script.
         python_string = ""
+
+        def is_number_string(s):
+            """Returns True is string is a number."""
+            try:
+                float(s)
+                return True
+            except ValueError:
+                return False
+
         for t in python_dict:
             valor = python_dict[t]
             if isinstance(valor, basestring):
@@ -8761,7 +8742,7 @@ mon_rules_no_success_binding_cmd = @mon_rules_no_success_binding_cmd@ -->
                         )
                         type_script = z["user"].strip()
                         if z["user"].strip() == "":
-                            type_script = python
+                            type_script = "python"
                         with open(namefileout, "ab") as out:
                             out.write(
                                 "\n-------- script %s--------\n"

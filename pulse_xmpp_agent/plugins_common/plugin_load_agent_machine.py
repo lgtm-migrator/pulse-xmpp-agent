@@ -35,11 +35,13 @@ import os
 import json
 import logging
 from lib import utils
+from lib.networkinfo import organizationbymachine, organizationbyuser
 
-import base64
+import psutil
 import zlib
 import configparser
 import re
+import time
 
 # this import will be used later
 import types
@@ -74,7 +76,7 @@ def read_conf_load_agent_machine(xmppobject):
     conf_filename = plugin["NAME"] + ".ini"
 
     try:
-        pathfileconf = os.path.join(xmppobject.config.nameplugindir, namefichierconf)
+        pathfileconf = os.path.join(xmppobject.config.nameplugindir, conf_filename)
         if not os.path.isfile(pathfileconf):
             logger.warning(
                 "Plugin %s\nConfiguration file :"
@@ -128,7 +130,7 @@ def read_conf_load_agent_machine(xmppobject):
         logger.error("We obtained the backtrace %s" % traceback.format_exc())
 
 
-def get_list_function_dyn_agent_machine(self):
+def get_list_function_dyn_agent_machine(xmppobject):
     logger.debug(
         "return list function install from this plugin : %s"
         % xmppobject.list_function_agent_name
@@ -161,7 +163,7 @@ def _minifyjsonstringrecv(strjson):
 
 
 def _test_type(value):
-    if isinstance(value, bool) or isinstance(value, int) or isinstance(value, float):
+    if isinstance(value, (bool, int, float)):
         return value
     else:
         try:
@@ -252,7 +254,7 @@ def handle_client_connection(self, msg):
                 try:
                     self.config.ipxmpp
                 except BaseException:
-                    self.config.ipxmpp = getIpXmppInterface(
+                    self.config.ipxmpp = utils.getIpXmppInterface(
                         self.config.Server, self.config.Port
                     )
                 if self.config.ipxmpp in result["removedinterface"]:
@@ -267,7 +269,7 @@ def handle_client_connection(self, msg):
                         "The new network interface can replace the previous one. "
                         "The service will resume after restarting the agent"
                     )
-                    if is_connectedServer(self.ipconnection, self.config.Port):
+                    if utils.is_connectedServer(self.ipconnection, self.config.Port):
                         # We only do a restart
                         logger.warning(logmsg)
                         self.md5reseau = utils.refreshfingerprint()
@@ -276,7 +278,7 @@ def handle_client_connection(self, msg):
                         # We reconfigure all
                         # Activating the new interface can take a while.
                         time.sleep(15)
-                        if is_connectedServer(
+                        if utils.is_connectedServer(
                             self.ipconnection,
                             self.config.Port,
                         ):
@@ -471,7 +473,6 @@ def helpcmd(xmppobject, result):
                     "data": "name_module",
                 },
                 "comment": 'get level handler omettre key data pour le logger principal. autrement "data": "nom de module"',
-                "comment": "",
                 "exemple": 'echo -n \'{"action": "get_debug_level", "data": "slixmpp" }\'| nc localhost 8765}',
             },
             "set_debug_level": {
@@ -648,7 +649,7 @@ def set_debug_level_str(xmppobject, result):
                             )
                             return False, msgr
                         else:
-                            msgr = "error verify format module existe\n %s" % (
+                            msgr = "error verify format module existe\n %s %s" % (
                                 result["data"]["loggername"],
                                 msg,
                             )

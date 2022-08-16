@@ -53,12 +53,10 @@ import imp
 import requests
 from functools import wraps  # This convenience func preserves name and docstring
 import uuid
-import string
 from Crypto import Random
 from Crypto.Cipher import AES
 import tarfile
 import string
-import asyncio
 import asyncio as aio
 
 # 3rd party modules
@@ -680,7 +678,7 @@ def call_plugin_separate(name, *args, **kwargs):
 def call_plugin(name, *args, **kwargs):
     # util only asyncio
     # add compteur appel plugins
-    loop = asyncio.new_event_loop()
+    loop = aio.new_event_loop()
     count = 0
     try:
         count = getattr(args[0], "num_call%s" % args[1])
@@ -1371,7 +1369,7 @@ def subnetnetwork(adressmachine, mask):
 
 
 def subnet_address(address, maskvalue):
-    addr = [int(x) for x in adress.split(".")]
+    addr = [int(x) for x in address.split(".")]
     mask = [int(x) for x in maskvalue.split(".")]
     subnet = [addr[i] & mask[i] for i in range(4)]
     broadcast = [(addr[i] & mask[i]) | (255 ^ mask[i]) for i in range(4)]

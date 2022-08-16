@@ -64,8 +64,8 @@ import tarfile
 from functools import wraps
 import string
 import platform
-import asyncio
 import asyncio as aio
+import posix_ipc
 
 logger = logging.getLogger()
 
@@ -685,7 +685,7 @@ def call_plugin(name, *args, **kwargs):
                 nameplugin = os.path.join(args[0].modulepath, "plugin_%s" % args[1])
                 logger.debug("Loading plugin %s" % args[1])
 
-                loop = asyncio.new_event_loop()
+                loop = aio.new_event_loop()
                 count = 0
                 try:
                     count = getattr(args[0], "num_call%s" % args[1])

@@ -29,7 +29,7 @@ from lib.utils import Env
 if sys.platform.startswith("darwin"):
     import plyvel
 else:
-    import bsddb3
+    import bsddb3 as bsddb
 
 
 logger = logging.getLogger()
@@ -103,7 +103,7 @@ class manageschedulerdeploy:
         else:
             try:
                 self.dbcmdscheduler = bsddb.btopen(self.name_basecmd, "c")
-            except DBInvalidArgError:
+            except bsddb.db.DBInvalidArgError:
                 logger.error(
                     "An error occured while opening the bsddb database: %s"
                     % self.name_basecmd
@@ -119,7 +119,7 @@ class manageschedulerdeploy:
 
             try:
                 self.dbsessionscheduler = bsddb.btopen(self.name_basesession, "c")
-            except DBInvalidArgError:
+            except bsddb.db.DBInvalidArgError:
                 logger.error(
                     "An error occured while opening the bsddb database: %s"
                     % self.name_basesession

@@ -740,7 +740,7 @@ class PkgsDatabase(DatabaseHelper):
         ars_share_id,
         packages_id,
         status,
-        finger_print,
+        fingerprint,
         size,
         edition_date,
     ):
@@ -752,9 +752,9 @@ class PkgsDatabase(DatabaseHelper):
             new_Pkgs_shares_ars_web.ars_share_id = ars_share_id
             new_Pkgs_shares_ars_web.packages_id = packages_id
             new_Pkgs_shares_ars_web.status = status
-            new_Pkgs_shares_ars_web.finger_print = finger_print
+            new_Pkgs_shares_ars_web.finger_print = fingerprint
             new_Pkgs_shares_ars_web.size = size
-            new_Pkgs_shares_ars_web.date_edition = date_edition
+            new_Pkgs_shares_ars_web.date_edition = edition_date
             session.add(new_Pkgs_shares_ars_web)
             session.commit()
             session.flush()
@@ -783,7 +783,7 @@ class PkgsDatabase(DatabaseHelper):
         self, session, pkgs_rules_algos_id, pkgs_cluster_ars_id, order, subject
     ):
         try:
-            new_Pkgs_rules_global = Pkgs_rules_local()
+            new_Pkgs_rules_global = Pkgs_rules_global()
             new_Pkgs_rules_global.pkgs_rules_algos_id = pkgs_rules_algos_id
             new_Pkgs_rules_global.pkgs_cluster_ars_id = pkgs_cluster_ars_id
             new_Pkgs_rules_global.order = order
@@ -801,6 +801,7 @@ class PkgsDatabase(DatabaseHelper):
         self, session, pkgs_rules_algos_id, pkgs_shares_id, order, subject, permission
     ):
         try:
+            new_Pkgs_rules_local = Pkgs_rules_local()
             new_Pkgs_rules_local.pkgs_rules_algos_id = pkgs_rules_algos_id
             new_Pkgs_rules_local.pkgs_shares_id = pkgs_shares_id
             new_Pkgs_rules_local.order = order
@@ -935,6 +936,7 @@ class PkgsDatabase(DatabaseHelper):
                         packages.pkgs_share_id = %s;""" % (
                 share_id
             )
+        result = session.execute(sql)
         session.commit()
         session.flush()
         return [x for x in result][0][0]
