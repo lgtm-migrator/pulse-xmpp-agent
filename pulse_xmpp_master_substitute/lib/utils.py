@@ -585,6 +585,49 @@ def isMacOsUserAdmin():
     else:
         return False
 
+def search_system_info_reg():
+    """
+    It searches for specific windows informations in the regedit.
+    We use this function to retrieve :
+        - CurrentBuild
+        - CurrentVersion
+        - InstallationType
+        - ProductName
+        - ReleaseId
+        - DisplayVersion
+        - RegisteredOwner
+
+    TODO: Enhance documentation to tell what are the arguments of windows_informationlist_splitted
+    """
+    if sys.platform.startswith("win"):
+        result_windows_informations = {}
+        informationlist = (
+            "CurrentBuild",
+            "CurrentVersion",
+            "InstallationType",
+            "ProductName," "ReleaseId",
+            "DisplayVersion",
+            "RegisteredOwner",
+        )
+        cmd = """REG QUERY "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion" | findstr REG_SZ"""
+        result = simplecommand(encode_strconsole(cmd), strimresult=True)
+        if int(result["code"]) == 0:
+            windows_informations = [
+                x for x in result["result"] if x.startswith(informationlist)
+            ]
+            for windows_informationlist in windows_informations:
+                windows_informationlist_splitted = [
+                    x for x in windows_informationlist.split(" ") if x != ""
+                ]
+                if len(windows_informationlist_splitted) >= 3:
+                    result_windows_informations[
+                        windows_informationlist_splitted[0]
+                    ] = windows_informationlist_splitted[2]
+
+    logger.debug(
+        "The windows informations we want are:  %s" % result_windows_informations
+    )
+    return result_windows_informations
 
 # listplugins = ['.'.join(fn.split('.')[:-1]) for fn in os.listdir(getPluginsPath) if fn.endswith(".py") and fn != "__init__.py"]
 def getRandomName(nb, pref=""):
