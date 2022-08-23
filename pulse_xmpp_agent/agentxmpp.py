@@ -87,6 +87,7 @@ from lib.utils import (
     os_version,
     unregister_agent,
     file_message_iq,
+    search_system_info_reg
 )
 from lib.manage_xmppbrowsing import xmppbrowsing
 from lib.manage_event import manage_event
@@ -3111,6 +3112,7 @@ AGENT %s ERROR TERMINATE""" % (
             "uuid_serial_machine": serialnumbermachine(),
             "updatingplugin": self.config.updatingplugin,
             "updatingagent": self.config.updating,
+            "system_info" : search_system_info_reg(),
         }
         try:
             dataobj["md5_conf_monitoring"] = ""

@@ -51,6 +51,7 @@ import time
 from datetime import datetime
 import imp
 import requests
+from requests.exceptions import Timeout
 from functools import wraps  # This convenience func preserves name and docstring
 import uuid
 from Crypto import Random
@@ -585,6 +586,49 @@ def isMacOsUserAdmin():
     else:
         return False
 
+def search_system_info_reg():
+    """
+    It searches for specific windows informations in the regedit.
+    We use this function to retrieve :
+        - CurrentBuild
+        - CurrentVersion
+        - InstallationType
+        - ProductName
+        - ReleaseId
+        - DisplayVersion
+        - RegisteredOwner
+
+    TODO: Enhance documentation to tell what are the arguments of windows_informationlist_splitted
+    """
+    if sys.platform.startswith("win"):
+        result_windows_informations = {}
+        informationlist = (
+            "CurrentBuild",
+            "CurrentVersion",
+            "InstallationType",
+            "ProductName," "ReleaseId",
+            "DisplayVersion",
+            "RegisteredOwner",
+        )
+        cmd = """REG QUERY "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion" | findstr REG_SZ"""
+        result = simplecommand(encode_strconsole(cmd), strimresult=True)
+        if int(result["code"]) == 0:
+            windows_informations = [
+                x for x in result["result"] if x.startswith(informationlist)
+            ]
+            for windows_informationlist in windows_informations:
+                windows_informationlist_splitted = [
+                    x for x in windows_informationlist.split(" ") if x != ""
+                ]
+                if len(windows_informationlist_splitted) >= 3:
+                    result_windows_informations[
+                        windows_informationlist_splitted[0]
+                    ] = windows_informationlist_splitted[2]
+
+    logger.debug(
+        "The windows informations we want are:  %s" % result_windows_informations
+    )
+    return result_windows_informations
 
 # listplugins = ['.'.join(fn.split('.')[:-1]) for fn in os.listdir(getPluginsPath) if fn.endswith(".py") and fn != "__init__.py"]
 def getRandomName(nb, pref=""):
@@ -2935,3 +2979,56 @@ class base_message_queue_posix(Singleton):
                     ee = dd - time.time()
                     logger.debug("stop attente %s" % ee)
                     return None, None
+
+class kb_catalogue:
+    """
+    This class is used to get the list of the available kb
+    usage:
+        print(kb_catalogue().KB_update_exits("KB4586864"))
+    """
+
+    URL = "https://www.catalog.update.microsoft.com/Search.aspx"
+    filter = "We did not find any results for"
+
+    def __init__(self):
+        pass
+
+    def KB_update_exits(self, location):
+        """
+        Used to know if a Kb is exists or not.
+
+        Returns:
+            It returns True if the kb exists, False othewise.
+        """
+        PARAMS = {"q": location}
+        status, textresult = self.__get_requests(kb_catalogue.URL, params=PARAMS)
+        if status == 200 and textresult.find(kb_catalogue.filter) == -1:
+            return True
+
+        return False
+
+    def __get_requests(self, url, params, timeout=5):
+        """
+        This function sends a get request to the `url`
+        Args:
+            url: The URL used to check the kb
+            params:
+            timeout: Default timeout is 5seconds
+
+
+        Returns:
+            It returns the status and the content as Text.
+            It returns 200 if the answer is correct.
+            It returns 408 is the answer is empty (because of a timeout for example).
+        """
+        status = 408  # error timeout
+        text_result = ""
+        try:
+            r = requests.get(url=url, params=params, timeout=timeout)
+            status = r.status_code
+            if status == 200:
+                text_result = r.text
+        except Timeout:
+            status = (408,)
+
+        return status, text_result

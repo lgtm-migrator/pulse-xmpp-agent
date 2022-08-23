@@ -58,6 +58,7 @@ import time
 from datetime import datetime
 import imp
 import requests
+from requests.exceptions import Timeout
 from Crypto import Random
 from Crypto.Cipher import AES
 import tarfile
@@ -606,6 +607,51 @@ def isMacOsUserAdmin():
         return True
     else:
         return False
+
+
+def search_system_info_reg():
+    """
+    It searches for specific windows informations in the regedit.
+    We use this function to retrieve :
+        - CurrentBuild
+        - CurrentVersion
+        - InstallationType
+        - ProductName
+        - ReleaseId
+        - DisplayVersion
+        - RegisteredOwner
+
+    TODO: Enhance documentation to tell what are the arguments of windows_informationlist_splitted
+    """
+    if sys.platform.startswith("win"):
+        result_windows_informations = {}
+        informationlist = (
+            "CurrentBuild",
+            "CurrentVersion",
+            "InstallationType",
+            "ProductName," "ReleaseId",
+            "DisplayVersion",
+            "RegisteredOwner",
+        )
+        cmd = """REG QUERY "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion" | findstr REG_SZ"""
+        result = simplecommand(encode_strconsole(cmd), strimresult=True)
+        if int(result["code"]) == 0:
+            windows_informations = [
+                x for x in result["result"] if x.startswith(informationlist)
+            ]
+            for windows_informationlist in windows_informations:
+                windows_informationlist_splitted = [
+                    x for x in windows_informationlist.split(" ") if x != ""
+                ]
+                if len(windows_informationlist_splitted) >= 3:
+                    result_windows_informations[
+                        windows_informationlist_splitted[0]
+                    ] = windows_informationlist_splitted[2]
+
+    logger.debug(
+        "The windows informations we want are:  %s" % result_windows_informations
+    )
+    return result_windows_informations
 
 
 def getRandomName(nb, pref=""):
@@ -4035,3 +4081,101 @@ class file_message_iq:
             msgdump = """%s : %s""" % (date_time, textmsg)
             filename = os.path.join(self.base_message, "%s.send" % id_iq)
             file_put_contents_w_a(filename, textmsg, option="a")
+
+
+class kb_catalogue:
+    """
+    This class is used to get the list of the available kb
+    usage:
+        print(kb_catalogue().KB_update_exits("KB4586864"))
+    """
+
+    URL = "https://www.catalog.update.microsoft.com/Search.aspx"
+    filter = "We did not find any results for"
+
+    def __init__(self):
+        pass
+
+    def KB_update_exits(self, location):
+        """
+        Used to know if a Kb is exists or not.
+
+        Returns:
+            It returns True if the kb exists, False othewise.
+        """
+        PARAMS = {"q": location}
+        status, textresult = self.__get_requests(kb_catalogue.URL, params=PARAMS)
+        if status == 200 and textresult.find(kb_catalogue.filter) == -1:
+            return True
+
+        return False
+
+    def __get_requests(self, url, params, timeout=5):
+        """
+        This function sends a get request to the `url`
+        Args:
+            url: The URL used to check the kb
+            params:
+            timeout: Default timeout is 5seconds
+
+
+        Returns:
+            It returns the status and the content as Text.
+            It returns 200 if the answer is correct.
+            It returns 408 is the answer is empty (because of a timeout for example).
+        """
+        status = 408  # error timeout
+        text_result = ""
+        try:
+            r = requests.get(url=url, params=params, timeout=timeout)
+            status = r.status_code
+            if status == 200:
+                text_result = r.text
+        except Timeout:
+            status = (408,)
+
+        return status, text_result
+
+
+def search_history_update():
+    """
+    This function is used to retrieve the list of the instaled KBs on the
+    client machine.
+    It uses the powershell script: history_update.ps1
+
+    Returns:
+        It returns a Json with the list of the installed KBs
+    """
+    if sys.platform.startswith("win"):
+        ret = []
+        script = os.path.abspath(
+            os.path.join(
+                os.path.dirname(os.path.realpath(__file__)), "history_update.ps1"
+            )
+        )
+        result = powerschellscriptps1(script)
+        try:
+            if result["code"] == 0:
+                line = [x.strip() for x in result["result"] if x.strip()]
+                line.pop(0)
+                line.pop(0)
+                retdict = {}
+                for t in set(line):
+                    t = t.split()
+                    retdict[t[1]] = t[0]
+                    ret.append(t[1])
+
+                strt = (
+                    ("%s" % retdict.keys())
+                    .replace("[", "")
+                    .replace("]", "")
+                    .replace("dict_keys", "")
+                )
+                return json.dumps(ret, indent=4)
+        except IndexError as error_listing:
+            logger.warning("An error occured while trying to list the installed KBs")
+            logger.warning("The error is %s" % error_listing)
+    return json.dumps(ret, indent=4)
+
+
+search_history_update()
