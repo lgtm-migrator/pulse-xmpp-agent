@@ -21,7 +21,6 @@
 
 import glob
 import os
-import sys
 import json
 import logging
 import time
@@ -78,7 +77,7 @@ class fifodeploy:
             logging.getLogger().warning(
                 "look file %s in Manager fifo :\n[%s]" % (pathnamefile, str(e))
             )
-            logger.error("\n%s" % (traceback.format_exc()))
+            logging.getLogger().error("\n%s" % (traceback.format_exc()))
             return {}
 
     def readfifo(self, namefifo):
@@ -99,7 +98,7 @@ class fifodeploy:
             logging.getLogger().warning(
                 "look file %s in Manager fifo :\n[%s]" % (pathnamefile, str(e))
             )
-            logger.error("\n%s" % (traceback.format_exc()))
+            logging.getLogger().error("\n%s" % (traceback.format_exc()))
             return {}
 
     def displayfifo(self):

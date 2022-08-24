@@ -23,6 +23,9 @@
 # file : pulse_xmpp_master_substitute/lib/utils.py
 #
 
+"""
+    This file contains shared functions use in pulse client/server agents.
+"""
 
 import netifaces
 import json
@@ -38,8 +41,7 @@ import traceback
 from pprint import pprint
 import hashlib
 import base64
-import urllib.request, urllib.parse, urllib.error
-import urllib.request, urllib.error, urllib.parse
+import urllib.request
 import pickle
 from .agentconffile import conffilename
 import configparser
@@ -52,7 +54,6 @@ import requests
 from requests.exceptions import Timeout
 from functools import wraps  # This convenience func preserves name and docstring
 import uuid
-import string
 from Crypto import Random
 from Crypto.Cipher import AES
 import tarfile
@@ -101,8 +102,8 @@ class Env(object):
             )
         if Env.agenttype == "relayserver":
             return os.path.join("/", "var", "lib", "pulse2")
-        else:
-            return os.path.expanduser("~pulseuser")
+
+        return os.path.expanduser("~pulseuser")
 
 
 # debug decorator
@@ -190,10 +191,13 @@ def dump_parameter(para=True, out=True, timeprocess=True):
 
 def Setdirectorytempinfo():
     """
-    This functions create a temporary directory.
+    This function is used to obtain the path to the temporary directory used
+    by the agent to store informations like network or configuration fingerprints.
+
 
     Returns:
-    path directory INFO Temporaly and key RSA
+        It returns the path to the temporary directory.
+
     """
     dirtempinfo = os.path.join(os.path.dirname(os.path.realpath(__file__)), "INFOSTMP")
     if not os.path.exists(dirtempinfo):
@@ -215,6 +219,14 @@ def cleanbacktodeploy(objectxmpp):
 
 
 def networkinfoexist():
+    """
+    This function is used to check that the fingerprintnetwork folder
+    exists.
+
+    Returns:
+        True if the file exists
+        False if the file does not exists
+    """
     filenetworkinfo = os.path.join(Setdirectorytempinfo(), "fingerprintnetwork")
     if os.path.exists(filenetworkinfo):
         return True
@@ -237,6 +249,53 @@ def save_count_start():
         countstart = 1
     file_put_contents(filecount, str(countstart))
     return countstart
+
+
+def unregister_agent(user, domain, resource):
+    """
+    This function is used to know if we need to unregister an old JID
+        Args:
+            user: User for the JID
+            domain: Domain for the JID
+            resource: Resource of the JID
+        Returns:
+            It returns `True` if we need to unregister an old JID.
+    """
+    jidinfo = {"user": user, "domain": domain, "resource": resource}
+    filejid = os.path.join(Setdirectorytempinfo(), "jid")
+    if not os.path.exists(filejid):
+        savejsonfile(filejid, jidinfo)
+        return False, jidinfo
+    oldjid = loadjsonfile(filejid)
+    if oldjid["user"] != user or oldjid["domain"] != domain:
+        savejsonfile(filejid, jidinfo)
+        return True, jidinfo
+    if oldjid["resource"] != resource:
+        savejsonfile(filejid, jidinfo)
+    return False, jidinfo
+
+
+def unregister_subscribe(user, domain, resource):
+    """
+    This function is used to know if we need to unregister an old jid.
+    Args:
+        domain: the domain of the ejabberd.
+        resource: The ressource used in the ejabberd jid.
+    Returns:
+        It returns True if we need to unregister the old jid. False otherwise.
+    """
+    jidinfosubscribe = {"user": user, "domain": domain, "resource": resource}
+    filejidsubscribe = os.path.join(Setdirectorytempinfo(), "subscribe")
+    if not os.path.exists(filejidsubscribe):
+        savejsonfile(filejidsubscribe, jidinfosubscribe)
+        return False, jidinfosubscribe
+    oldjidsubscribe = loadjsonfile(filejidsubscribe)
+    if oldjidsubscribe["user"] != user or oldjidsubscribe["domain"] != domain:
+        savejsonfile(filejidsubscribe, jidinfosubscribe)
+        return True, jidinfosubscribe
+    if oldjidsubscribe["resource"] != resource:
+        savejsonfile(filejidsubscribe, jidinfosubscribe)
+    return False, jidinfosubscribe
 
 
 def save_back_to_deploy(obj):
@@ -314,6 +373,19 @@ def confinfoexist():
 
 
 def confchanged(typeconf):
+    """
+    This function is used to know if the configuration changed.
+
+    If the checked file does not exist or if the fingerprint have
+    changed we consider that the configuration changed.
+
+    We check the fingerprint between the old saved configuration
+    which is stored in the `fingerprintconf` variable.
+
+    Returns:
+        True if we consider that the configuration changed
+        False if we consider that the configuration has not changed
+    """
     if confinfoexist():
         fingerprintconf = file_get_contents(
             os.path.join(Setdirectorytempinfo(), "fingerprintconf")
@@ -321,6 +393,7 @@ def confchanged(typeconf):
         newfingerprintconf = createfingerprintconf(typeconf)
         if newfingerprintconf == fingerprintconf:
             return False
+
     return True
 
 
@@ -331,6 +404,18 @@ def refreshfingerprintconf(typeconf):
 
 
 def networkchanged():
+    """
+    This function is used to know if the network changed.
+
+    If the checked file does not exist or if the fingerprint have
+    changed we consider that the network changed.
+
+    A network change means that the interfaces changed ( new or deleted )
+
+    Returns:
+        True if we consider that the network changed
+        False if we consider that the network has not changed
+    """
     if networkinfoexist():
         fingerprintnetwork = file_get_contents(
             os.path.join(Setdirectorytempinfo(), "fingerprintnetwork")
@@ -338,8 +423,8 @@ def networkchanged():
         newfingerprint = createfingerprintnetwork()
         if fingerprintnetwork == newfingerprint:
             return False
-    else:
-        return True
+
+    return True
 
 
 def refreshfingerprint():
@@ -502,6 +587,49 @@ def isMacOsUserAdmin():
     else:
         return False
 
+def search_system_info_reg():
+    """
+    It searches for specific windows informations in the regedit.
+    We use this function to retrieve :
+        - CurrentBuild
+        - CurrentVersion
+        - InstallationType
+        - ProductName
+        - ReleaseId
+        - DisplayVersion
+        - RegisteredOwner
+
+    TODO: Enhance documentation to tell what are the arguments of windows_informationlist_splitted
+    """
+    if sys.platform.startswith("win"):
+        result_windows_informations = {}
+        informationlist = (
+            "CurrentBuild",
+            "CurrentVersion",
+            "InstallationType",
+            "ProductName," "ReleaseId",
+            "DisplayVersion",
+            "RegisteredOwner",
+        )
+        cmd = """REG QUERY "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion" | findstr REG_SZ"""
+        result = simplecommand(encode_strconsole(cmd), strimresult=True)
+        if int(result["code"]) == 0:
+            windows_informations = [
+                x for x in result["result"] if x.startswith(informationlist)
+            ]
+            for windows_informationlist in windows_informations:
+                windows_informationlist_splitted = [
+                    x for x in windows_informationlist.split(" ") if x != ""
+                ]
+                if len(windows_informationlist_splitted) >= 3:
+                    result_windows_informations[
+                        windows_informationlist_splitted[0]
+                    ] = windows_informationlist_splitted[2]
+
+    logger.debug(
+        "The windows informations we want are:  %s" % result_windows_informations
+    )
+    return result_windows_informations
 
 def search_system_info_reg():
     result_cmd = { }
@@ -570,6 +698,7 @@ def loadModule(filename):
         sys.path.append(searchPath)
         sys.path.append(os.path.normpath(searchPath + "/../"))
     moduleName, ext = os.path.splitext(file)
+
     try:
         fp, pathName, description = imp.find_module(
             moduleName,
@@ -578,12 +707,15 @@ def loadModule(filename):
             ],
         )
     except Exception:
-        logger.error("\n%s" % (traceback.format_exc()))
+        logger.error("We hit a backtrace when searching for Modules")
+        logger.error("We got the backtrace\n%s" % (traceback.format_exc()))
         return None
+
     try:
         module = imp.load_module(moduleName, fp, pathName, description)
     except Exception:
-        logger.error("\n%s" % (traceback.format_exc()))
+        logger.error("We hit a backtrace when loading Modules")
+        logger.error("We got the backtrace \n%s" % (traceback.format_exc()))
     finally:
         if fp:
             fp.close()
@@ -607,7 +739,7 @@ def call_plugin_separate(name, *args, **kwargs):
 def call_plugin(name, *args, **kwargs):
     # util only asyncio
     # add compteur appel plugins
-    loop = asyncio.new_event_loop()
+    loop = aio.new_event_loop()
     count = 0
     try:
         count = getattr(args[0], "num_call%s" % args[1])
@@ -797,7 +929,6 @@ def typelinux():
     result = p.stdout.readlines()
     # code_result = p.wait()
     system = result[0].rstrip("\n")
-    """renvoi la liste des ip gateway en fonction de l'interface linux"""
     return system
 
 
@@ -1299,7 +1430,7 @@ def subnetnetwork(adressmachine, mask):
 
 
 def subnet_address(address, maskvalue):
-    addr = [int(x) for x in adress.split(".")]
+    addr = [int(x) for x in address.split(".")]
     mask = [int(x) for x in maskvalue.split(".")]
     subnet = [addr[i] & mask[i] for i in range(4)]
     broadcast = [(addr[i] & mask[i]) | (255 ^ mask[i]) for i in range(4)]
@@ -1475,7 +1606,6 @@ def shutdown_command(time=0, msg=""):
             cmd = 'shutdown -h +%s "%s"' % (time, msg)
             logging.debug(cmd)
             os.system(cmd)
-    return
 
 
 def vnc_set_permission(askpermission=1):
@@ -1499,8 +1629,6 @@ def vnc_set_permission(askpermission=1):
     elif sys.platform.startswith("darwin"):
         pass
 
-    return
-
 
 def reboot_command():
     """
@@ -1512,8 +1640,6 @@ def reboot_command():
         os.system("shutdown /r")
     elif sys.platform.startswith("darwin"):
         os.system("shutdown -r now")
-
-    return
 
 
 def isBase64(s):
@@ -1527,28 +1653,49 @@ def isBase64(s):
 
 def decode_strconsole(x):
     """
-    input str decode to default coding python(# -*- coding: utf-8; -*-)
+    Decode strings into the format used on the OS.
+    Supported OS are: linux, windows and darwin
+
+    Args:
+        x: the string we want to encode
+
+    Returns:
+        The decoded `x` string
     """
     if sys.platform.startswith("linux"):
         return x.decode("utf-8", "ignore")
-    elif sys.platform.startswith("win"):
+
+    if sys.platform.startswith("win"):
         return x.decode("cp850", "ignore")
-    elif sys.platform.startswith("darwin"):
+
+    if sys.platform.startswith("darwin"):
         return x.decode("utf-8", "ignore")
-    else:
-        return x
+
+    return x
 
 
 def encode_strconsole(x):
-    """output str encode to coding other system"""
+    """
+    Encode strings into the format used on the OS.
+    Supported OS are: linux, windows and darwin
+
+    Args:
+        x: the string we want to encode
+
+    Returns:
+        The encoded `x` string
+    """
+
     if sys.platform.startswith("linux"):
         return x.encode("utf-8")
-    elif sys.platform.startswith("win"):
+
+    if sys.platform.startswith("win"):
         return x.encode("cp850")
-    elif sys.platform.startswith("darwin"):
+
+    if sys.platform.startswith("darwin"):
         return x.encode("utf-8")
-    else:
-        return x
+
+    return x
 
 
 def savejsonfile(filename, data, indent=4):
@@ -1730,6 +1877,7 @@ class AESCipher:
             self.key = key.encode("utf-8")
         else:
             self.key = key  # self.key is bytes
+
         self.BS = BS
 
     def _bchr(self, s):
@@ -1767,6 +1915,7 @@ class AESCipher:
 
     def _unpad(self, s):
         dtrdata = s[: -ord(s[len(s) - 1 :])]
+        return dtrdata.decode("utf-8")
 
 
 def sshdup():
@@ -1777,13 +1926,13 @@ def sshdup():
         if result["code"] == 0:
             return True
         return False
-    elif sys.platform.startswith("darwin"):
+    if sys.platform.startswith("darwin"):
         cmd = "launchctl list com.openssh.sshd"
         result = simplecommand(cmd)
         if result["code"] == 0:
             return True
         return False
-    elif sys.platform.startswith("win"):
+    if sys.platform.startswith("win"):
         cmd = "TASKLIST | FINDSTR sshd"
         result = simplecommand(cmd)
         if len(result["result"]) > 0:
@@ -1797,11 +1946,11 @@ def restartsshd():
         if not sshdup():
             cmd = "systemctrl restart sshd"
             result = simplecommand(cmd)
-    elif sys.platform.startswith("darwin"):
+    if sys.platform.startswith("darwin"):
         if not sshdup():
             cmd = "launchctl restart /System/Library/LaunchDaemons/ssh.plist"
             result = simplecommand(cmd)
-    elif sys.platform.startswith("win"):
+    if sys.platform.startswith("win"):
         if not sshdup():
             # on cherche le nom reel du service pour sshd.
             cmd = 'sc query state= all | findstr "sshd" | findstr "SERVICE_NAME"'
@@ -2189,8 +2338,8 @@ def get_user_profile(username="pulseuser"):
     result = simplecommand(encode_strconsole(check_profile_cmd))
     if result["code"] == 0 and result["result"]:
         return result["result"][0]
-    else:
-        return ""
+
+    return ""
 
 
 def get_user_sid(username="pulseuser"):
@@ -2399,9 +2548,9 @@ def reversessh_useraccount_mustexist_on_relay(username="reversessh"):
     if result["code"] == 0:
         msg = "Creation of %s user account successful: %s" % (username, result)
         return True, msg
-    else:
-        msg = "Creation of %s user account failed: %s" % (username, result)
-        return False, msg
+
+    msg = "Creation of %s user account failed: %s" % (username, result)
+    return False, msg
 
 
 def reversessh_keys_mustexist_on_relay(username="reversessh"):
@@ -2553,21 +2702,13 @@ class geolocalisation_agent:
                 self.determination = True
                 self.setdatafilegeolocalisation()
                 return self.localisation
-            else:
-                if self.localisation is not None:
-                    if not self.geoinfoexist():
-                        self.setdatafilegeolocalisation()
-                        self.determination = False
-                    return self.localisation
-                elif not self.geoinfoexist():
-                    self.localisation = geolocalisation_agent.searchgeolocalisation(
-                        self.listgeoserver
-                    )
+
+            if self.localisation is not None:
+                if not self.geoinfoexist():
                     self.setdatafilegeolocalisation()
-                    self.determination = True
-                    return self.localisation
-            return None
-        else:
+                    self.determination = False
+                return self.localisation
+
             if not self.geoinfoexist():
                 self.localisation = geolocalisation_agent.searchgeolocalisation(
                     self.listgeoserver
@@ -2575,6 +2716,16 @@ class geolocalisation_agent:
                 self.setdatafilegeolocalisation()
                 self.determination = True
                 return self.localisation
+
+            return None
+
+        if not self.geoinfoexist():
+            self.localisation = geolocalisation_agent.searchgeolocalisation(
+                self.listgeoserver
+            )
+            self.setdatafilegeolocalisation()
+            self.determination = True
+            return self.localisation
 
         return self.localisation
 
@@ -2655,7 +2806,7 @@ def base64strencode(data):
 
 class Singleton(object):
     def __new__(type, *args):
-        if not "_the_instance" in type.__dict__:
+        if "_the_instance" not in type.__dict__:
             type._the_instance = object.__new__(type)
         return type._the_instance
 
@@ -2782,8 +2933,6 @@ class base_message_queue_posix(Singleton):
         base_message_queue_posix.file_reponse_iq = listqueue
 
     def clean_file_all_message(self, prefixe=""):
-        logger.debug("clean_file_all_message base_message_queue_posix.file_reponse_iq")
-
         listqueue = []
         for fmp in base_message_queue_posix.file_reponse_iq:
             if fmp["time"] == -1:
@@ -2848,43 +2997,55 @@ class base_message_queue_posix(Singleton):
                     logger.debug("stop attente %s" % ee)
                     return None, None
 
-
 class kb_catalogue:
     """
-        class for request catalog update site
-        eg : utilisation
-            print( kb_catalogue().KB_update_exits("KB4586864"))
+    This class is used to get the list of the available kb
+    usage:
+        print(kb_catalogue().KB_update_exits("KB4586864"))
     """
+
     URL = "https://www.catalog.update.microsoft.com/Search.aspx"
     filter = "We did not find any results for"
+
     def __init__(self):
         pass
 
     def KB_update_exits(self, location):
         """
-            return if kb existe in update catalogue
+        Used to know if a Kb is exists or not.
+
+        Returns:
+            It returns True if the kb exists, False othewise.
         """
-        PARAMS = { 'q' : location }
-        status, textresult = self.__get_requests(kb_catalogue.URL, params = PARAMS)
+        PARAMS = {"q": location}
+        status, textresult = self.__get_requests(kb_catalogue.URL, params=PARAMS)
         if status == 200 and textresult.find(kb_catalogue.filter) == -1:
             return True
-        else:
-            return False
+
+        return False
 
     def __get_requests(self, url, params, timeout=5):
         """
-        this function send get to url
-        return status et content text request
-        status 200 correct reponse
-        status 408 incorrect reponse content text empty
+        This function sends a get request to the `url`
+        Args:
+            url: The URL used to check the kb
+            params:
+            timeout: Default timeout is 5seconds
+
+
+        Returns:
+            It returns the status and the content as Text.
+            It returns 200 if the answer is correct.
+            It returns 408 is the answer is empty (because of a timeout for example).
         """
-        status = 408 # error timeout
+        status = 408  # error timeout
         text_result = ""
         try:
-            r = requests.get(url = url, params = params, timeout=timeout)
+            r = requests.get(url=url, params=params, timeout=timeout)
             status = r.status_code
             if status == 200:
                 text_result = r.text
         except Timeout:
-            status = 408,
+            status = (408,)
+
         return status, text_result

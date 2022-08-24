@@ -33,14 +33,11 @@ from lib.utils import name_random
 import configparser
 import types
 import time
-import random
-import re
 from slixmpp import jid
 from slixmpp.exceptions import IqError, IqTimeout
 
 logger = logging.getLogger()
-
-plugin = {"VERSION": "1.3", "NAME": "loadarscheck", "TYPE": "substitute"} # fmt: skip
+plugin = {"VERSION": "1.3", "NAME": "loadarscheck", "TYPE": "substitute"}  # fmt: skip
 
 
 def action(objectxmpp, action, sessionid, data, msg, ret):

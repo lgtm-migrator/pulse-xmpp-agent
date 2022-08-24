@@ -26,19 +26,15 @@
 
 from lib import utils
 import json
-import traceback
-import sys
 import logging
 import os
-import time
 from lib.agentconffile import directoryconffile
 import configparser
 import re
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
-
-plugin = {"VERSION": "1.3", "NAME": "startupdate", "TYPE": "machine"} # fmt: skip
+plugin = {"VERSION": "1.3", "NAME": "startupdate", "TYPE": "machine"}  # fmt: skip
 
 
 def read_conf_plugin_startupdate(objectxmpp):

@@ -30,11 +30,10 @@ from lib.utils import name_random
 import logging
 import os
 import configparser
-from wakeonlan import wol
+import wakeonlan as wol
 
 logger = logging.getLogger()
-
-plugin = {"VERSION": "1.1", "NAME": "wakeonlan", "TYPE": "master" } # fmt: skip
+plugin = {"VERSION": "1.1", "NAME": "wakeonlan", "TYPE": "master" }  # fmt: skip
 
 
 def action(xmppobject, action, sessionid, data, message, ret, dataobj):

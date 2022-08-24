@@ -86,8 +86,9 @@ from distutils.version import LooseVersion
 from lib.configuration import confParameter
 from lib.plugins.xmpp import XmppMasterDatabase
 
-if sys.version_info >= (3,0,0):
+if sys.version_info >= (3, 0, 0):
     basestring = (str, bytes)
+
 
 class Singleton(object):
     def __new__(type, *args):
@@ -149,7 +150,7 @@ class DatabaseHelper(Singleton):
             if "filters" in params and params["filters"]:
                 clauses = [
                     _entity_descriptor(query._mapper_zero(), key) == value
-                    for key, value in params["filters"].items()
+                    for key, value in list(params["filters"].items())
                 ]
                 if clauses:
                     query = query.filter(*clauses)
@@ -159,7 +160,7 @@ class DatabaseHelper(Singleton):
                     _entity_descriptor(query._mapper_zero(), key).like(
                         "%" + value + "%"
                     )
-                    for key, value in params["like_filters"].items()
+                    for key, value in list(params["like_filters"].items())
                 ]
                 if clauses:
                     query = query.filter(*clauses)
@@ -885,7 +886,7 @@ class Glpi84(DatabaseHelper):
         resultrecord = {}
         try:
             if ret:
-                for keynameresult in ret.keys():
+                for keynameresult in list(ret.keys()):
                     try:
                         if getattr(ret, keynameresult) is None:
                             resultrecord[keynameresult] = ""
@@ -1164,13 +1165,6 @@ class Glpi84(DatabaseHelper):
         if idmachine != "" or uuidsetup != "":
             result["data"]["uuidglpicomputer"] = result["data"].pop("uuid")
         return result
-
-    def getMachineByUuidSetup(self, uuidsetupmachine):
-        """@return: all computers that have this uuid setup machine"""
-        session = create_session()
-        ret = session.query(Machine).filter(Machine.uuid.like(uuidsetupmachine)).first()
-        session.close()
-        return self._machineobject(ret)
 
     def getMachineInformationByUuidSetup(self, uuidsetupmachine):
         """@return: all computers that have this uuid setup machine"""
@@ -1748,7 +1742,7 @@ class Glpi84(DatabaseHelper):
                             else:
                                 ret.append(partA.like(self.encode(partB)))
                         except Exception as e:
-                            print(str(e))
+                            print((str(e)))
                             self.logger.error("\n%s" % (traceback.format_exc()))
                             ret.append(partA.like(self.encode(partB)))
             if ctx.userid != "root":
@@ -2628,11 +2622,11 @@ class Glpi84(DatabaseHelper):
         machines_uuid_size = len(a_machine_uuid)
         all_computers = session.query(Machine)
         all_computers = self.filterOnUUID(all_computers, a_machine_uuid).all()
-        all_computers = Set([toUUID(str(m.id)) for m in all_computers])
+        all_computers = set([toUUID(str(m.id)) for m in all_computers])
         if len(all_computers) != machines_uuid_size:
             self.logger.info(
                 "some machines have been deleted since that list was generated (%s)"
-                % (str(Set(a_machine_uuid) - all_computers))
+                % (str(set(a_machine_uuid) - all_computers))
             )
             machines_uuid_size = len(all_computers)
         size = 1
@@ -2644,9 +2638,9 @@ class Glpi84(DatabaseHelper):
             return True
         elif (not all) and len(ret) > 0:
             return True
-        ret = Set([toUUID(str(m.id)) for m in ret])
+        ret = set([toUUID(str(m.id)) for m in ret])
         self.logger.info(
-            "dont have permissions on %s" % (str(Set(a_machine_uuid) - ret))
+            "dont have permissions on %s" % (str(set(a_machine_uuid) - ret))
         )
         return False
 
@@ -2776,7 +2770,7 @@ class Glpi84(DatabaseHelper):
 
         ids = []
         dict = self.searchOptions[lang]
-        for key, value in dict.items():
+        for key, value in list(dict.items()):
             if filter.lower() in value.lower():
                 ids.append(key)
 
@@ -2788,7 +2782,7 @@ class Glpi84(DatabaseHelper):
         """
         ids = []
         dict = self.getLinkedActions()
-        for key, value in dict.items():
+        for key, value in list(dict.items()):
             if filter.lower() in value.lower():
                 ids.append(key)
 
@@ -6107,7 +6101,7 @@ class DBObj(object):
         if "_sa_instance_state" in d:
             del d["_sa_instance_state"]
         # Actually we don't support relations
-        for key, value in d.items():
+        for key, value in list(d.items()):
             if key and type(value) not in [type({}), type([])]:
                 setattr(self, key, value)
 

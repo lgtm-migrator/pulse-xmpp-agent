@@ -28,9 +28,7 @@ import shlex
 import json
 import subprocess
 from lib import utils
-import shutil
 import logging
-import traceback
 import time
 
 if sys.platform.startswith("win"):
@@ -40,7 +38,7 @@ if sys.platform.startswith("win"):
     import win32api
 
 logger = logging.getLogger()
-plugin = {"VERSION": "3.2", "NAME": "reverse_ssh_on", "TYPE": "all"} # fmt: skip
+plugin = {"VERSION": "3.2", "NAME": "reverse_ssh_on", "TYPE": "all"}  # fmt: skip
 
 
 def checkresult(result):

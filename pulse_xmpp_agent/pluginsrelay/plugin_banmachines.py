@@ -20,15 +20,13 @@
 # MA 02110-1301, USA.
 # file : pulse_agent_plugins/relay/plugin_cluster.py
 
-import json
 import logging
 from lib import utils
 
 logger = logging.getLogger()
 
 DEBUGPULSEPLUGIN = 25
-
-plugin = {"VERSION": "0.0.9", "NAME": "banmachines", "VERSIONAGENT": "2.0.0", "TYPE": "relayserver", "DESC": "Ban specified machines from the relay", } # fmt: skip
+plugin = {"VERSION": "0.0.9", "NAME": "banmachines", "VERSIONAGENT": "2.0.0", "TYPE": "relayserver", "DESC": "Ban specified machines from the relay", }  # fmt: skip
 
 
 def action(objectxmpp, action, sessionid, data, message, dataerror):

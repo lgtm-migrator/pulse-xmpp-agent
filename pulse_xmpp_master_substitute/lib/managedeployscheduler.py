@@ -28,7 +28,7 @@ import logging
 if sys.platform.startswith("darwin"):
     import plyvel
 else:
-    import bsddb
+    import bsddb3 as bsddb
 from lib.utils import Env
 
 

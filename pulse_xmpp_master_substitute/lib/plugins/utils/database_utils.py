@@ -40,7 +40,7 @@ def encode_utf8(self, s):
 def encode_latin1(self, s):
     try:
         return s.decode("utf8")
-    except exceptions.UnicodeEncodeError:
+    except UnicodeEncodeError:
         return s
     except AttributeError:
         # under python 2.3, unicode object dont have any decode method
@@ -56,7 +56,7 @@ def decode_utf8(self, s):
 def decode_latin1(self, s):
     try:
         return s.decode("latin-1")
-    except exceptions.UnicodeEncodeError:
+    except UnicodeEncodeError:
         return s
 
 

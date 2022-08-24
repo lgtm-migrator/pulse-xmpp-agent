@@ -23,32 +23,19 @@
 # file  : pulse_xmpp_agent/connectionagent.py
 import sys
 
-if sys.version_info[0] == 3:
-    from slixmpp import ClientXMPP
-    from slixmpp import jid
-    from slixmpp.xmlstream import handler, matcher
-    from slixmpp.exceptions import IqError, IqTimeout
-    from slixmpp.xmlstream.stanzabase import ET
-    import slixmpp
-    import asyncio
-else:
-    import imp
-    import sleekxmpp
-    from sleekxmpp.xmlstream import handler, matcher
-    from sleekxmpp.exceptions import IqError, IqTimeout
-    from sleekxmpp.xmlstream.stanzabase import ET
-    from sleekxmpp import jid
-    from sleekxmpp import ClientXMPP
-
-    imp.reload(sys)
-    sys.setdefaultencoding("utf8")
+from slixmpp import ClientXMPP
+from slixmpp import jid
+from slixmpp.xmlstream import handler, matcher
+from slixmpp.exceptions import IqError, IqTimeout
+from slixmpp.xmlstream.stanzabase import ET
+import slixmpp
+import asyncio
 
 import shutil
 import os
 import logging
 import platform
 import subprocess
-import base64
 import time
 import json
 import re
@@ -713,14 +700,10 @@ class MUCBot(ClientXMPP):
                 "uuid_serial_machine": serialnumbermachine(),
                 "regcomplet": self.FullRegistration,
                 "system_info" : search_system_info_reg(),
-                }
-
+            }
 
         except Exception:
-            logger.error(
-                "dataobj %s"
-                % traceback.format_exc()
-            )
+            logger.error("dataobj %s" % traceback.format_exc())
 
         if self.geodata is not None:
             dataobj["geolocalisation"] = self.geodata.localisation
@@ -732,11 +715,11 @@ class MUCBot(ClientXMPP):
         except KeyError as e:
             lastusersession = ""
 
-        if not lastusersession :
+        if not lastusersession:
             dataobj["adorgbyuser"] = base64strencode(
                 organizationbyuser(lastusersession)
             )
-        if not lastusersession :
+        if not lastusersession:
             lastusersession = powershellgetlastuser()
         return dataobj
 
@@ -816,9 +799,10 @@ class MUCBot(ClientXMPP):
         self.disconnect(wait=5)
 
     def handle_disconnected(self, data):
-        print("handle_disconnected %s\n" % self.connect_loop_wait)
-        self.connect_loop_wait = 2
-        # self.disconnect()
+        logger.debug(
+            "We got disconnected. We will reconnect in %s seconds"
+            % self.get_connect_loop_wait()
+        )
 
     def register(self, iq):
         logging.info("register user %s" % self.boundjid)
@@ -1041,6 +1025,8 @@ def doTask(optstypemachine, optsconsoledebug, optsdeamon, tglevellog, tglogfile)
         )
 
     while True:
+        if not tg.confserver.strip():
+            tg = confParameter(optstypemachine)
         logging.log(
             DEBUGPULSE, "ipfromdns %s %s" % (ipfromdns(tg.confserver), tg.confserver)
         )

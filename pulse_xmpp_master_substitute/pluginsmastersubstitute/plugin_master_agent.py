@@ -33,17 +33,20 @@ from lib.plugins.kiosk import KioskDatabase
 from lib.manageRSAsigned import MsgsignedRSA
 from slixmpp import jid
 from lib.utils import getRandomName, call_plugin, call_plugin_separate
-#, call_pluginseparatedthred
+
+# , call_pluginseparatedthred
 import re
 from distutils.version import LooseVersion
 import configparser
 import netaddr
+
 # this import will be used later
 import types
 
 logger = logging.getLogger()
 
 plugin = {"VERSION": "1.0", "NAME": "master_agent", "TYPE": "substitute"}
+
 
 def action(xmppobject, action, sessionid, data, msg, dataerreur):
     try:
@@ -57,35 +60,30 @@ def action(xmppobject, action, sessionid, data, msg, dataerreur):
             read_conf_remote_master_agent(xmppobject)
             logger.debug("========================================================")
     except Exception as e:
-        logger.error("Plugin loadarscheck, we encountered the error %s" % str(e))
+        logger.error(
+            "The master_agent substitute failed. We encountered the error %s" % str(e)
+        )
         logger.error("We obtained the backtrace %s" % traceback.format_exc())
+
 
 def read_conf_remote_master_agent(xmppobject):
     logger.debug("Initializing plugin :% s " % plugin["NAME"])
-    namefichierconf = plugin["NAME"] + ".ini"
-    logger.debug("Install fonction code masterfunctioncode")
-    xmppobject.masterfunctioncode = types.MethodType( masterfunctioncode, xmppobject)
-    module = "%s/plugin_%s.py"%(xmppobject.modulepath,  "__server_file")
-    logger.debug("================= INSTALL server_file mmc =================")
+    conffile_name = plugin["NAME"] + ".ini"
+    xmppobject.masterfunctioncode = types.MethodType(masterfunctioncode, xmppobject)
+    module = "%s/plugin_%s.py" % (xmppobject.modulepath, "__server_file")
     logger.debug("module :% s " % module)
-    call_plugin( module,
-                xmppobject,
-                "server_file")
-
-    logger.debug("================ server_file mmc INSTALLED ================")
+    call_plugin(module, xmppobject, "server_file")
     try:
-        pathfileconf = os.path.join(xmppobject.config.pathdirconffile,
-                                    namefichierconf)
-        if not os.path.isfile(pathfileconf):
+        conffile_path = os.path.join(xmppobject.config.pathdirconffile, conffile_name)
+        if not os.path.isfile(conffile_path):
             logger.warning(
-                "Plugin %s\nConfiguration file :"\
-                "\n\t%s missing" % (plugin["NAME"], pathfileconf)
+                "Plugin %s\nConfiguration file :"
+                "\n\t%s missing" % (plugin["NAME"], conffile_path)
             )
     except Exception as e:
         logger.error("We obtained the backtrace %s" % traceback.format_exc())
 
 
 def masterfunctioncode(self):
-    # status// "ready", "disable", "busy", "warning", "error"
-    logger.debug( "install fonction masterfunctioncode")
-
+    # TODO: IMPLEMENT ME
+    logger.debug("IMPLEMENT ME")

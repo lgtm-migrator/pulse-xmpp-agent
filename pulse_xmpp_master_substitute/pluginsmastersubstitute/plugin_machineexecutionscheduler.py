@@ -26,12 +26,11 @@ if deploy is pause, run, abandonned
 
 """
 import json
-import sys
 from lib.plugins.xmpp import XmppMasterDatabase
 import traceback
 import logging
 
-plugin = {"VERSION": "1.0", "NAME": "machineexecutionscheduler", "TYPE": "substitute"} # fmt: skip
+plugin = {"VERSION": "1.0", "NAME": "machineexecutionscheduler", "TYPE": "substitute"}  # fmt: skip
 
 """
 #eg : data plugin received
@@ -74,7 +73,7 @@ def action(xmppobject, action, sessionid, data, message, ret, dataobj):
         )
     except Exception as e:
         print("Error in plugin %s" % str(e))
-        logger.error("\n%s" % (traceback.format_exc()))
+        logging.getLogger().error("\n%s" % (traceback.format_exc()))
         # abandonmentdeploy, run or pause
         advanced["actionscheduler"] = "error"
         datasend = {

@@ -21,7 +21,9 @@
 # MA 02110-1301, USA.
 #
 # file : pulse_xmpp_agent/lib/utils.py
-#
+"""
+    This file contains shared functions use in pulse client/server agents.
+"""
 
 import sys
 
@@ -56,17 +58,15 @@ import time
 from datetime import datetime
 import imp
 import requests
-
 from requests.exceptions import Timeout
-
 from Crypto import Random
 from Crypto.Cipher import AES
 import tarfile
 from functools import wraps
 import string
 import platform
-import asyncio
 import asyncio as aio
+import posix_ipc
 
 logger = logging.getLogger()
 
@@ -109,8 +109,8 @@ class Env(object):
             )
         if Env.agenttype == "relayserver":
             return os.path.join("/", "var", "lib", "pulse2")
-        else:
-            return os.path.expanduser("~pulseuser")
+
+        return os.path.expanduser("~pulseuser")
 
 
 def os_version():
@@ -213,9 +213,13 @@ def dump_parameter(para=True, out=True, timeprocess=True):
 
 def Setdirectorytempinfo():
     """
-    This functions create a temporary directory.
+    This function is used to obtain the path to the temporary directory used
+    by the agent to store informations like network or configuration fingerprints.
 
-    @returns path directory INFO Temporaly and key RSA
+
+    Returns:
+        It returns the path to the temporary directory.
+
     """
     dirtempinfo = os.path.join(os.path.dirname(os.path.realpath(__file__)), "INFOSTMP")
     if not os.path.exists(dirtempinfo):
@@ -265,6 +269,52 @@ def save_count_start():
         countstart = 1
     file_put_contents(filecount, str(countstart))
     return countstart
+
+
+def unregister_agent(user, domain, resource):
+    """
+    This function is used to know if we need to unregister an old jid.
+    Args:
+        domain: the domain of the ejabberd.
+        resource: The ressource used in the ejabberd jid.
+    Returns:
+        It returns True if we need to unregister the old jid. False otherwise.
+    """
+    jidinfo = {"user": user, "domain": domain, "resource": resource}
+    filejid = os.path.join(Setdirectorytempinfo(), "jid")
+    if not os.path.exists(filejid):
+        savejsonfile(filejid, jidinfo)
+        return False, jidinfo
+    oldjid = loadjsonfile(filejid)
+    if oldjid["user"] != user or oldjid["domain"] != domain:
+        savejsonfile(filejid, jidinfo)
+        return True, jidinfo
+    if oldjid["resource"] != resource:
+        savejsonfile(filejid, jidinfo)
+    return False, jidinfo
+
+
+def unregister_subscribe(user, domain, resource):
+    """
+    This function is used to know if we need to unregister an old jid.
+    Args:
+        domain: the domain of the ejabberd.
+        resource: The ressource used in the ejabberd jid.
+    Returns:
+        It returns True if we need to unregister the old jid. False otherwise.
+    """
+    jidinfosubscribe = {"user": user, "domain": domain, "resource": resource}
+    filejidsubscribe = os.path.join(Setdirectorytempinfo(), "subscribe")
+    if not os.path.exists(filejidsubscribe):
+        savejsonfile(filejidsubscribe, jidinfosubscribe)
+        return False, jidinfosubscribe
+    oldjidsubscribe = loadjsonfile(filejidsubscribe)
+    if oldjidsubscribe["user"] != user or oldjidsubscribe["domain"] != domain:
+        savejsonfile(filejidsubscribe, jidinfosubscribe)
+        return True, jidinfosubscribe
+    if oldjidsubscribe["resource"] != resource:
+        savejsonfile(filejidsubscribe, jidinfosubscribe)
+    return False, jidinfosubscribe
 
 
 def save_back_to_deploy(obj):
@@ -342,6 +392,19 @@ def confinfoexist():
 
 
 def confchanged(typeconf):
+    """
+    This function is used to know if the configuration changed.
+
+    If the checked file does not exist or if the fingerprint have
+    changed we consider that the configuration changed.
+
+    We check the fingerprint between the old saved configuration
+    which is stored in the `fingerprintconf` variable.
+
+    Returns:
+        True if we consider that the configuration changed
+        False if we consider that the configuration has not changed
+    """
     if confinfoexist():
         fingerprintconf = file_get_contents(
             os.path.join(Setdirectorytempinfo(), "fingerprintconf")
@@ -359,6 +422,18 @@ def refreshfingerprintconf(typeconf):
 
 
 def networkchanged():
+    """
+    This function is used to know if the network changed.
+
+    If the checked file does not exist or if the fingerprint have
+    changed we consider that the network changed.
+
+    A network change means that the interfaces changed ( new or deleted )
+
+    Returns:
+        True if we consider that the network changed
+        False if we consider that the network has not changed
+    """
     if networkinfoexist():
         fingerprintnetwork = file_get_contents(
             os.path.join(Setdirectorytempinfo(), "fingerprintnetwork")
@@ -379,7 +454,6 @@ def refreshfingerprint():
 def file_get_contents(
     filename, use_include_path=0, context=None, offset=-1, maxlen=-1, encoding=None
 ):
-
     if filename.find("://") > 0:
         ret = urllib.request.urlopen(filename).read()
         if offset > 0:
@@ -536,20 +610,49 @@ def isMacOsUserAdmin():
 
 
 def search_system_info_reg():
-    result_cmd = { }
+    """
+    It searches for specific windows informations in the regedit.
+    We use this function to retrieve :
+        - CurrentBuild
+        - CurrentVersion
+        - InstallationType
+        - ProductName
+        - ReleaseId
+        - DisplayVersion
+        - RegisteredOwner
+
+    TODO: Enhance documentation to tell what are the arguments of windows_informationlist_splitted
+    """
     if sys.platform.startswith("win"):
-        informationlist = ("CurrentBuild", "CurrentVersion", "InstallationType", "ProductName," "ReleaseId", "DisplayVersion","RegisteredOwner")
+        result_windows_informations = {}
+        informationlist = (
+            "CurrentBuild",
+            "CurrentVersion",
+            "InstallationType",
+            "ProductName," "ReleaseId",
+            "DisplayVersion",
+            "RegisteredOwner",
+        )
         cmd = """REG QUERY "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion" | findstr REG_SZ"""
-        result = simplecommand(encode_strconsole(cmd), strimresult= True)
+        result = simplecommand(encode_strconsole(cmd), strimresult=True)
         if int(result["code"]) == 0:
-            # analyse result
-            line = [ x for x in result['result'] if x.startswith(informationlist)]
-            for t in line:
-                lcmd = [ x for x in t.split (" ") if x != ""]
-                if len(lcmd) >= 3:
-                    result_cmd[lcmd[0]] = lcmd[2]
-    logging.getLogger().debug("info version update %s" % result_cmd)
-    return result_cmd
+            windows_informations = [
+                x for x in result["result"] if x.startswith(informationlist)
+            ]
+            for windows_informationlist in windows_informations:
+                windows_informationlist_splitted = [
+                    x for x in windows_informationlist.split(" ") if x != ""
+                ]
+                if len(windows_informationlist_splitted) >= 3:
+                    result_windows_informations[
+                        windows_informationlist_splitted[0]
+                    ] = windows_informationlist_splitted[2]
+
+    logger.debug(
+        "The windows informations we want are:  %s" % result_windows_informations
+    )
+    return result_windows_informations
+
 
 def getRandomName(nb, pref=""):
     a = "abcdefghijklnmopqrstuvwxyz0123456789"
@@ -594,7 +697,6 @@ def loadModule(filename):
 
 
 def call_plugin_separate(name, *args, **kwargs):
-    logger.debug("call_plugin_separate %s" % name)
     try:
         nameplugin = name
         if args[0].config.plugin_action:
@@ -622,7 +724,6 @@ def call_plugin_separate(name, *args, **kwargs):
 
 
 def call_plugin(name, *args, **kwargs):
-    logger.debug("call_plugin %s" % name)
     try:
         nameplugin = name
         if args[0].config.plugin_action:
@@ -630,7 +731,7 @@ def call_plugin(name, *args, **kwargs):
                 nameplugin = os.path.join(args[0].modulepath, "plugin_%s" % args[1])
                 logger.debug("Loading plugin %s" % args[1])
 
-                loop = asyncio.new_event_loop()
+                loop = aio.new_event_loop()
                 count = 0
                 try:
                     count = getattr(args[0], "num_call%s" % args[1])
@@ -654,7 +755,6 @@ def call_plugin(name, *args, **kwargs):
 
 
 def call_plugin_sequentially(name, *args, **kwargs):
-    logger.debug("call_plugin_sequentially %s" % name)
     try:
         nameplugin = name
         if args[0].config.plugin_action:
@@ -861,7 +961,6 @@ def typelinux():
     )
     result = p.stdout.readlines()
     system = result[0].rstrip("\n")
-    """renvoi la liste des ip gateway en fonction de l'interface linux"""
     return system
 
 
@@ -1507,7 +1606,6 @@ class protodef:
         else:
             logging.getLogger().debug("  fproto FALSE")
         self.refreshfingerprintproto()
-        logging.getLogger().debug("self.fileprotoinfo%s" % self.fileprotoinfo)
         self.fingerprintproto = file_get_binarycontents(self.fileprotoinfo)
         self.proto = pickle.loads(self.fingerprintproto)
         return True, self.proto
@@ -1696,7 +1794,6 @@ def shutdown_command(time=0, msg=""):
             cmd = 'shutdown -h +%s "%s"' % (time, msg)
             logging.debug(cmd)
             os.system(cmd)
-    return
 
 
 def vnc_set_permission(askpermission=1):
@@ -1720,8 +1817,6 @@ def vnc_set_permission(askpermission=1):
     elif sys.platform.startswith("darwin"):
         pass
 
-    return
-
 
 def reboot_command():
     """
@@ -1733,7 +1828,6 @@ def reboot_command():
         os.system("shutdown /r")
     elif sys.platform.startswith("darwin"):
         os.system("shutdown -r now")
-    return
 
 
 def isBase64(s):
@@ -1747,30 +1841,50 @@ def isBase64(s):
 
 def decode_strconsole(x):
     """
-    imput str decode to default coding python(# -*- coding: utf-8; -*-)
+    Decode strings into the format used on the OS.
+    Supported OS are: linux, windows and darwin
+
+    Args:
+        x: the string we want to encode
+
+    Returns:
+        The decoded `x` string
     """
+
     if sys.platform.startswith("linux"):
         return x.decode("utf-8", "ignore")
-    elif sys.platform.startswith("win"):
+
+    if sys.platform.startswith("win"):
         return x.decode("cp850", "ignore")
-    elif sys.platform.startswith("darwin"):
+
+    if sys.platform.startswith("darwin"):
         return x.decode("utf-8", "ignore")
-    else:
-        return x
+
+    return x
 
 
 def encode_strconsole(x):
     """
-    output str encode to coding other system
+    Encode strings into the format used on the OS.
+    Supported OS are: linux, windows and darwin
+
+    Args:
+        x: the string we want to encode
+
+    Returns:
+        The encoded `x` string
     """
+
     if sys.platform.startswith("linux"):
         return x.encode("utf-8")
-    elif sys.platform.startswith("win"):
+
+    if sys.platform.startswith("win"):
         return x.encode("cp850")
-    elif sys.platform.startswith("darwin"):
+
+    if sys.platform.startswith("darwin"):
         return x.encode("utf-8")
-    else:
-        return x
+
+    return x
 
 
 def savejsonfile(filename, data, indent=4):
@@ -2096,6 +2210,7 @@ class AESCipher:
 
     def _unpad(self, s):
         dtrdata = s[: -ord(s[len(s) - 1 :])]
+        return dtrdata.decode("utf-8")
 
 
 def setgetcountcycle(data=None):
@@ -3543,7 +3658,6 @@ def serialnumbermachine():
         if sys.platform.startswith("win"):
             result = simplecommand("wmic csproduct get uuid")
             if result["code"] == 0 and result["result"]:
-                # a = [x.strip().decode("utf-8", "ignore") for x in result["result"]]
                 serial_uuid_machine = (
                     "".join(result["result"]).replace("UUID", "").strip()
                 )
@@ -3555,8 +3669,9 @@ def serialnumbermachine():
             cmd = r"""ioreg -d2 -c IOPlatformExpertDevice | awk -F\" '/IOPlatformUUID/{print $(NF-1)}'"""
             result = simplecommand(cmd)
             if result["code"] == 0 and result["result"]:
-                a = [x.strip().decode("utf-8", "ignore") for x in result["result"]]
-                serial_uuid_machine = "".join(a).replace("UUID", "").strip()
+                serial_uuid_machine = (
+                    "".join(result["result"]).replace("UUID", "").strip()
+                )
         else:
             logger.warning(
                 "the serialnumbermachine function is not implemented for your os: %s"
@@ -3590,7 +3705,7 @@ def base64strencode(data):
 
 class Singleton(object):
     def __new__(type, *args):
-        if not "_the_instance" in type.__dict__:
+        if "_the_instance" not in type.__dict__:
             type._the_instance = object.__new__(type)
         return type._the_instance
 
@@ -3786,7 +3901,7 @@ class base_message_queue_posix(Singleton):
 
 class DateTimebytesEncoderjson(json.JSONEncoder):
     """
-    Used to hanld datetime in json files.
+    Used to handle datetime in json files.
     """
 
     def default(self, obj):
@@ -3926,7 +4041,7 @@ class file_message_iq:
                     if self.dev_mod:
                         logger.info("iq [%s] in timeout" % (id_iq))
                     return None
-                """ delete les items qui sont en timeout """
+                # delete les items qui sont en timeout
                 self.del_timeout_iq_old()
                 time.sleep(delta_time)
                 logger.warning("start boucle analyse %s" % id_iq)
@@ -3970,42 +4085,56 @@ class file_message_iq:
             filename = os.path.join(self.base_message, "%s.send" % id_iq)
             file_put_contents_w_a(filename, textmsg, option="a")
 
+
 class kb_catalogue:
     """
-        class for request catalog update site
-        eg : utilisation
-            print( kb_catalogue().KB_update_exits("KB4586864"))
+    This class is used to get the list of the available kb
+    usage:
+        print(kb_catalogue().KB_update_exits("KB4586864"))
     """
+
     URL = "https://www.catalog.update.microsoft.com/Search.aspx"
     filter = "We did not find any results for"
+
     def __init__(self):
         pass
 
     def KB_update_exits(self, location):
         """
-            return if kb existe in update catalogue
+        Used to know if a Kb is exists or not.
+
+        Returns:
+            It returns True if the kb exists, False othewise.
         """
-        PARAMS = { 'q' : location }
-        status, textresult = self.__get_requests(kb_catalogue.URL, params = PARAMS)
+        PARAMS = {"q": location}
+        status, textresult = self.__get_requests(kb_catalogue.URL, params=PARAMS)
         if status == 200 and textresult.find(kb_catalogue.filter) == -1:
             return True
-        else:
-            return False
+
+        return False
 
     def __get_requests(self, url, params, timeout=5):
         """
-        this function send get to url
-        return status et content text request
-        status 200 correct reponse
-        status 408 incorrect reponse content text empty
+        This function sends a get request to the `url`
+        Args:
+            url: The URL used to check the kb
+            params:
+            timeout: Default timeout is 5seconds
+
+
+        Returns:
+            It returns the status and the content as Text.
+            It returns 200 if the answer is correct.
+            It returns 408 is the answer is empty (because of a timeout for example).
         """
-        status = 408 # error timeout
+        status = 408  # error timeout
         text_result = ""
         try:
-            r = requests.get(url = url, params = params, timeout=timeout)
+            r = requests.get(url=url, params=params, timeout=timeout)
             status = r.status_code
             if status == 200:
                 text_result = r.text
         except Timeout:
-            status = 408,
+            status = (408,)
+
         return status, text_result

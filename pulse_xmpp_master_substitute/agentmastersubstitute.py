@@ -28,7 +28,6 @@ import sys
 import os
 import logging
 from lib.configuration import confParameter
-from lib.utils import DEBUGPULSE, ipfromdns
 from lib.logcolor import add_coloring_to_emit_ansi
 
 import traceback
@@ -39,6 +38,7 @@ from lib.plugins.kiosk import KioskDatabase
 from lib.plugins.msc import MscDatabase
 from lib.plugins.pkgs import PkgsDatabase
 from bin.agent import MUCBot
+
 from lib import manageRSAsigned
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib"))
@@ -161,20 +161,18 @@ def doTask(optsconsoledebug, optsdeamon, optfileconf):
 
 if __name__ == "__main__":
     if sys.platform.startswith("linux") and os.getuid() != 0:
-        print("Agent must be running as root")
+        logger.error("Agent must be running as root")
         sys.exit(0)
     # controle si les key de master sont installer
     dirkey = Setdirectorytempinfo()
     filekeypublic = os.path.join(Setdirectorytempinfo(), "master-public-RSA.key")
-    fileprivatekey = os.path.join(Setdirectorytempinfo(), "master-all-RSA.key")
+    fileprivatekey = os.path.join(Setdirectorytempinfo(), "master-private-RSA.key")
     msgkey = manageRSAsigned.MsgsignedRSA("master")
-    if not (os.path.isfile(filekeypublic) and os.path.isfile(filekey)):
-        print("key missing")
-        print(
-            ("install key of master in \n\t%s\n\t%s\n\n" % (filekeypublic, fileprivatekey))
-        )
-        print(
-            "find files key on master in file \n\t- /usr/lib/python2.7/dist-packages/mmc/plugins/xmppmaster/master/INFOSTMP/master-public-RSA.key\n\t- /usr/lib/python2.7/dist-packages/mmc/plugins/xmppmaster/master/INFOSTMP/master-private-RSA.key "
+    if not (os.path.isfile(filekeypublic) and os.path.isfile(fileprivatekey)):
+        logger.error("The security keys are missing.")
+        logger.error(
+            "To work correctly we need the following keys: \n - %s \n - %s"
+            % (filekeypublic, fileprivatekey)
         )
 
     namefileconfigdefault = os.path.join(

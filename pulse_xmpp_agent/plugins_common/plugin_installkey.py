@@ -20,18 +20,13 @@
 # MA 02110-1301, USA.
 # file common/plugin_installkey.py
 
-import sys
 import os
 import logging
 from lib import utils
-import subprocess
-import uuid
-import shutil
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
-
-plugin = { "VERSION": "4.1", "NAME": "installkey", "VERSIONAGENT": "2.0.0", "TYPE": "all", } # fmt: skip
+plugin = { "VERSION": "4.1", "NAME": "installkey", "VERSIONAGENT": "2.0.0", "TYPE": "all", }  # fmt: skip
 
 
 def action(objectxmpp, action, sessionid, data, message, dataerreur):

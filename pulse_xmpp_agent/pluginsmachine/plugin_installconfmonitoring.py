@@ -20,15 +20,13 @@
 # MA 02110-1301, USA.
 # file pluginsmachine/plugin_installconfmonitoring.py
 
-import os
 import logging
 import json
 import base64
 import traceback
 
 logger = logging.getLogger()
-
-plugin = {"VERSION": "1.0", "NAME": "installconfmonitoring", "TYPE": "machine"} # fmt: skip
+plugin = {"VERSION": "1.0", "NAME": "installconfmonitoring", "TYPE": "machine"}  # fmt: skip
 
 
 def action(objectxmpp, action, sessionid, data, message, dataerreur):

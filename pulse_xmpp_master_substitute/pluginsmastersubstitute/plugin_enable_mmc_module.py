@@ -24,7 +24,8 @@
 # return enable module mmc
 import logging
 import json
-#from mmc.agent import PluginManager
+
+# from mmc.agent import PluginManager
 
 logger = logging.getLogger()
 plugin = {"VERSION": "1.0", "NAME": "enable_mmc_module", "TYPE": "substitute"}
@@ -37,16 +38,28 @@ def action(xmppobject, action, sessionid, data, message, ret, dataobj):
     try:
         listmodule = xmppobject.list_mmc
     except Exception:
-        listmodule = ['base', 'support', 'backuppc', 'glpi',
-                      'xmppmaster', 'admin', 'dashboard',
-                      'dyngroup', 'msc', 'pkgs', 'services',
-                      'guacamole', 'imaging', 'pulse2']
+        listmodule = [
+            "base",
+            "support",
+            "backuppc",
+            "glpi",
+            "xmppmaster",
+            "admin",
+            "dashboard",
+            "dyngroup",
+            "msc",
+            "pkgs",
+            "services",
+            "guacamole",
+            "imaging",
+            "pulse2",
+        ]
 
     datasend = {
         "action": "resultenablemmcmodul",
         "sessionid": sessionid,
         "data": listmodule,
-    } # PluginManager().getEnabledPluginNames() Notify  Priority
+    }  # PluginManager().getEnabledPluginNames() Notify  Priority
     xmppobject.send_message(
         mto=message["from"], mbody=json.dumps(datasend), mtype="chat"
     )

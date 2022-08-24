@@ -24,14 +24,12 @@ import sys
 import os
 from distutils.version import StrictVersion
 import logging
-import shutil
 from lib import utils
 
 FILETREEVERSION = "0.1"
 
 logger = logging.getLogger()
-
-plugin = {"VERSION": "0.2", "NAME": "updatefiletreegenerator", "TYPE": "machine"} # fmt: skip
+plugin = {"VERSION": "0.2", "NAME": "updatefiletreegenerator", "TYPE": "machine"}  # fmt: skip
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):

@@ -34,24 +34,20 @@ import traceback
 import os
 import json
 import logging
-from slixmpp import jid
 from lib import utils
-import base64
+from lib.networkinfo import organizationbymachine, organizationbyuser
+
+import psutil
 import zlib
 import configparser
-
-# from lib.utils import getRandomName, call_plugin, call_plugin_separate
-# , call_pluginseparatedthred
 import re
-
-from lib.agentconffile import directoryconffile
-from distutils.version import LooseVersion
+import time
 
 # this import will be used later
 import types
 
 logger = logging.getLogger()
-plugin = {"VERSION" : "1.0", "NAME" : "load_agent_machine", "VERSIONAGENT" : "2.0.0", "TYPE" : "all", "INFO" : "code"}  # fmt: skip
+plugin = {"VERSION": "1.0", "NAME": "load_agent_machine", "VERSIONAGENT": "2.0.0", "TYPE": "all"}  # fmt: skip
 
 
 def action(xmppobject, action, sessionid, data, msg, dataerreur):
@@ -71,18 +67,16 @@ def action(xmppobject, action, sessionid, data, msg, dataerreur):
             read_conf_load_agent_machine(xmppobject)
             logger.debug("========================================================")
     except Exception as e:
-        logger.error("Plugin load_TCIIP, we encountered the error %s" % str(e))
+        logger.error("Plugin load_agent_machine, we encountered the error %s" % str(e))
         logger.error("We obtained the backtrace %s" % traceback.format_exc())
 
 
 def read_conf_load_agent_machine(xmppobject):
     logger.debug("Initializing plugin :% s " % plugin["NAME"])
-    namefichierconf = plugin["NAME"] + ".ini"
+    conf_filename = plugin["NAME"] + ".ini"
 
     try:
-        pathfileconf = os.path.join(xmppobject.config.nameplugindir, namefichierconf)
-        # definition default parameter
-        # end definition default parameter
+        pathfileconf = os.path.join(xmppobject.config.nameplugindir, conf_filename)
         if not os.path.isfile(pathfileconf):
             logger.warning(
                 "Plugin %s\nConfiguration file :"
@@ -99,35 +93,44 @@ def read_conf_load_agent_machine(xmppobject):
     except Exception as e:
         logger.error("We obtained the backtrace %s" % traceback.format_exc())
 
-    ########## INSTALL ICI FUNCTION SPECIALISER ##########
     logger.debug("Install fonction code specialiser agent machine")
     xmppobject.list_function_agent_name = []
     # ---------- install "get_list_function_dyn_agent_machine" --------
     xmppobject.list_function_agent_name.append("get_list_function_dyn_agent_machine")
+
     xmppobject.get_list_function_dyn_agent_machine = types.MethodType(
         get_list_function_dyn_agent_machine, xmppobject
     )
 
-    #### install reception message ####
+    # Install reception message
     xmppobject.handle_client_connection = types.MethodType(
         handle_client_connection, xmppobject
     )
 
-    ########## END INSTALL ICI FUNCTION SPECIALISER ##########
-
-    ### CREATE SERVER TCP/IP
+    ### Create TCP/IP Server
     module = "%s/plugin_%s.py" % (xmppobject.modulepath, "__server_tcpip")
-    logger.debug("===== INSTALL pluginsmachine/plugin___server_tcpip.py =====")
 
     logger.debug("module :% s " % module)
     try:
         utils.call_plugin(module, xmppobject, "__server_tcpip")
     except:
-        logger.error("install plufin__server_tcpip \n: %s" % (traceback.format_exc()))
-    logger.debug("===== END pluginsmachine/plugin___server_tcpip.py =====")
+        logger.error(
+            "We hit a backtrace in the read_conf_load_agent_machine function \n: %s"
+            % (traceback.format_exc())
+        )
+
+    try:
+        conffile_path = os.path.join(xmppobject.config.pathdirconffile, conf_filename)
+        if not os.path.isfile(conffile_path):
+            logger.warning(
+                "The configuration file for the plugin %s is missing. \n It should be located in %s"
+                % (plugin["NAME"], conffile_path)
+            )
+    except Exception as e:
+        logger.error("We obtained the backtrace %s" % traceback.format_exc())
 
 
-def get_list_function_dyn_agent_machine(self):
+def get_list_function_dyn_agent_machine(xmppobject):
     logger.debug(
         "return list function install from this plugin : %s"
         % xmppobject.list_function_agent_name
@@ -136,25 +139,22 @@ def get_list_function_dyn_agent_machine(self):
 
 
 def _minifyjsonstringrecv(strjson):
-    # on supprime les commentaires // et les passages a la ligne
     strjson = "".join(
         [row.split("//")[0] for row in strjson.split("\n") if len(row.strip()) != 0]
     )
-    # on vire les tab les passage a la ligne et les fin de ligne
     regex = re.compile(r"[\n\r\t]")
     strjson = regex.sub("", strjson)
-    # on protege les espaces des strings json
+    # We protect the spaces in strings in the jsons
     reg = re.compile(r"""(\".*?\n?.*?\")|(\'.*?\n?.*?\')""")
     newjson = re.sub(
         reg,
         lambda x: '"%s"' % str(x.group(0)).strip("\"'").strip().replace(" ", "@@ESP@@"),
         strjson,
     )
-    # on vire les espaces
     newjson = newjson.replace(" ", "")
-    # on remet les espace protégé
+    # We add the protected spaces
     newjson = newjson.replace("@@ESP@@", " ")
-    # on supprime deserror retrouver souvent dans les json
+    # We remove errors often seen on the json files
     newjson = newjson.replace(",}", "}")
     newjson = newjson.replace("{,", "{")
     newjson = newjson.replace("[,", "[")
@@ -163,7 +163,7 @@ def _minifyjsonstringrecv(strjson):
 
 
 def _test_type(value):
-    if isinstance(value, bool) or isinstance(value, int) or isinstance(value, float):
+    if isinstance(value, (bool, int, float)):
         return value
     else:
         try:
@@ -204,7 +204,6 @@ def handle_client_connection(self, msg):
     """
     substitute_recv = ""
 
-    logger.info("Received {}".format(msg))
     try:
         logger.info("Received {}".format(msg))
         datasend = {
@@ -214,7 +213,7 @@ def handle_client_connection(self, msg):
             "base64": False,
             "data": {},
         }
-        ##############
+
         if utils.isBase64(msg):
             msg = base64.b64decode(msg)
         try:
@@ -255,7 +254,7 @@ def handle_client_connection(self, msg):
                 try:
                     self.config.ipxmpp
                 except BaseException:
-                    self.config.ipxmpp = getIpXmppInterface(
+                    self.config.ipxmpp = utils.getIpXmppInterface(
                         self.config.Server, self.config.Port
                     )
                 if self.config.ipxmpp in result["removedinterface"]:
@@ -270,7 +269,7 @@ def handle_client_connection(self, msg):
                         "The new network interface can replace the previous one. "
                         "The service will resume after restarting the agent"
                     )
-                    if is_connectedServer(self.ipconnection, self.config.Port):
+                    if utils.is_connectedServer(self.ipconnection, self.config.Port):
                         # We only do a restart
                         logger.warning(logmsg)
                         self.md5reseau = utils.refreshfingerprint()
@@ -279,7 +278,7 @@ def handle_client_connection(self, msg):
                         # We reconfigure all
                         # Activating the new interface can take a while.
                         time.sleep(15)
-                        if is_connectedServer(
+                        if utils.is_connectedServer(
                             self.ipconnection,
                             self.config.Port,
                         ):
@@ -360,15 +359,12 @@ def handle_client_connection(self, msg):
                         elif result["type"] == "warning":
                             logger.warning(result["message"])
             elif result["action"] == "notifysyncthing":
+                datasend["sessionid"] = utils.getRandomName(6, "notifysyncthing")
                 datasend["action"] = "notifysyncthing"
                 datasend["sessionid"] = utils.getRandomName(6, "syncthing")
                 datasend["data"] = result["data"]
             elif result["action"] == "iqsendpulse":
                 return iqsendpulse_str(self, result)
-            # elif result["action"] == "get_debug_mode":
-            # return get_debug_mode_str(self, result)
-            # elif result["action"] == "set_debug_mode":
-            # return set_debug_mode_str(self, result)
             elif result["action"] == "unzip":
                 # direct action unzip str64
                 return unzip_str(self, result)
@@ -419,7 +415,6 @@ def handle_client_connection(self, msg):
                 # Call plugin on master
                 logger.warning("send to master")
                 self.send_message_to_master(datasend)
-                logger.warning("JFKJFK return True et '' ")
                 return True, ""
     except Exception as e:
         logger.error("message to kiosk server : %s" % str(e))
@@ -433,10 +428,10 @@ def helpcmd(xmppobject, result):
             "setparameter": {
                 "factory command": {
                     "action": "setparameter",
-                    "data": {"name_paramter": "value_parameter"},
+                    "data": {"parameter_name": "parameter_value"},
                 },
-                "comment": "definie ou modifie valeur d'un parametre",
-                "exemple": 'echo -n \'{"action": "setparameter", "data":  {"packageserver": {\n        "public_ip": "23.88.5.198",\n        "port": 9990\n    }}}\' | nc localhost 8765',
+                "comment": "Define or modify the value of a parameter.",
+                "exemple": 'echo -n \'{"action": "setparameter", "data":  {"packageserver": {\n        "public_ip": "192.168.0.69",\n        "port": 9990\n    }}}\' | nc localhost 8765',
             },
             "getparameter": {
                 "factory command": {"action": "getparameter"},
@@ -446,7 +441,7 @@ def helpcmd(xmppobject, result):
             "help": {
                 "factory command": {
                     "action": "help",
-                    "data": "name command",
+                    "data": "command name",
                 },
                 "comment": "help on command",
                 "exemple": 'echo -n \'{"action": "help", "data" : "unzip" }\'| nc localhost 8765',
@@ -454,9 +449,9 @@ def helpcmd(xmppobject, result):
             "unzip": {
                 "factory command": {
                     "action": "unzip",
-                    "data": "string compresse en base64==",
+                    "data": "string compressed in base64",
                 },
-                "comment": "unzip string base64",
+                "comment": "unzip base64 string",
                 "exemple": 'echo -n \'{"action": "unzip", "data":  "eNpzSS3LTE5VQAUh+SWJOWBWaHFqCpjhVpSaCuYqqELVVBYABXzzS/NKuJytYhTQgamBnoGBO5BhZK5nBGEY6VmAGQqmJlBD/ELcghUUgNq5ACckHJk="}\' | nc localhost 8765',
             },
             "iqsendpulse": {
@@ -465,12 +460,12 @@ def helpcmd(xmppobject, result):
                     "data": {
                         "action": "action_function_iq",
                         "data": "suject_iq",
-                        "mto": "destinataire_jid_complet",
-                        "mtimeout": "time en seconde",
+                        "mto": "recipient_complete_jid",
+                        "mtimeout": "time in seconds",
                     },
                 },
-                "comment": "send iq synchrone destinataire jid complet user@domain/resource",
-                "exemple": 'echo -n \'{"action": "iqsendpulse", "data":  {"action": "remotexmppmonitoring", "data": "disk_usage",  "mto": "qa-win-1.hpl@pulse/52540014cf93", "mtimeout": 100}}\' | nc localhost 8765',
+                "comment": "Send a synchrone IQ to the target with complete jid: user@domain/resource",
+                "exemple": 'echo -n \'{"action": "iqsendpulse", "data":  {"action": "remotexmppmonitoring", "data": "disk_usage",  "mto": "test-win-1.hpl@pulse/52540014cf93", "mtimeout": 100}}\' | nc localhost 8765',
             },
             "get_debug_level": {
                 "factory command": {
@@ -493,7 +488,7 @@ def helpcmd(xmppobject, result):
                         "exemple": 'echo -n \'{"action": "get_debug_level", "data": { "loggername" : "slixmpp", "level":"debug" }\'| nc localhost 8765}',
                     },
                 ],
-                "comment": "set level facilmity logger",
+                "comment": "set level facility logger",
                 "exemple": "suivant cas",
             },
         }
@@ -654,7 +649,7 @@ def set_debug_level_str(xmppobject, result):
                             )
                             return False, msgr
                         else:
-                            msgr = "error verify format module existe\n %s" % (
+                            msgr = "error verify format module existe\n %s %s" % (
                                 result["data"]["loggername"],
                                 msg,
                             )

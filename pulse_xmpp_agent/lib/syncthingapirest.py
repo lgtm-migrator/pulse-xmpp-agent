@@ -42,9 +42,7 @@
 import requests
 import json
 from lxml import etree
-import urllib.request
 import urllib.parse
-import urllib.error
 import socket
 from threading import Lock
 from lib.utils import (
@@ -60,8 +58,7 @@ import time
 import os
 import sys
 
-if sys.version_info[0] == 3:
-    from configparser import ConfigParser
+from configparser import ConfigParser
 
 logger = logging.getLogger()
 
@@ -138,7 +135,9 @@ def conf_ars_deploy(
 def save_xml_file(
     elementxml, configfile="/var/lib/syncthing-depl/.config/syncthing/config.xml"
 ):
-    file_put_contents(configfile, etree.tostring(elementxml, pretty_print=True))
+    file_put_contents(
+        configfile, etree.tostring(elementxml, pretty_print=True, encoding="unicode")
+    )
 
 
 def iddevice(

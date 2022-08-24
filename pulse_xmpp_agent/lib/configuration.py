@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8; -*-
 #
-# (c) 2016 siveo, http://www.siveo.net
+# (c) 2016-2022 siveo, http://www.siveo.net
 #
 # This file is part of Pulse 2, http://www.siveo.net
 #
@@ -25,12 +25,8 @@
 
 import sys
 
-if sys.version_info[0] == 3:
-    from configparser import ConfigParser
-    from slixmpp import jid
-else:
-    from configparser import ConfigParser
-    from sleekxmpp import jid
+from configparser import ConfigParser
+from slixmpp import jid
 import netifaces
 import json
 import platform
@@ -143,41 +139,55 @@ def nextalternativeclusterconnectioninformation(conffile):
     Args:
         conffile: the configuration file to modify
     """
-    alternatif_conf={ }
-    logger.error("JFKJFK function nextalternativeclusterconnection")
+    alternatif_conf = {}
     if not os.path.isfile(conffile):
         logger.error("file alternatif conf missing %s" % conffile)
         return {}
 
     Config = ConfigParser()
     Config.read(conffile)
-    alternatif_conf['nextserver'] = Config.getint("alternativelist", "nextserver")
-    alternatif_conf['nbserver'] = Config.getint("alternativelist", "nbserver")
-    alternatif_conf['listars'] = [ x.strip() for x \
-        in Config.get("alternativelist", "listars").split(",") if x.strip() != ""]
+    alternatif_conf["nextserver"] = Config.getint("alternativelist", "nextserver")
+    alternatif_conf["nbserver"] = Config.getint("alternativelist", "nbserver")
+    alternatif_conf["listars"] = [
+        x.strip()
+        for x in Config.get("alternativelist", "listars").split(",")
+        if x.strip() != ""
+    ]
 
-    if len(alternatif_conf['listars']) != alternatif_conf['nbserver']:
-        logger.error("format alternatif file %s : count list ars != nbserver" % conffile)
+    if len(alternatif_conf["listars"]) != alternatif_conf["nbserver"]:
+        logger.error(
+            "format alternatif file %s : count list ars != nbserver" % conffile
+        )
         return {}
 
-    if alternatif_conf['nextserver'] > alternatif_conf['nbserver']:
-        alternatif_conf['nextserver'] = 1
+    if alternatif_conf["nextserver"] > alternatif_conf["nbserver"]:
+        alternatif_conf["nextserver"] = 1
 
     # charge les informations server
-    for ars in alternatif_conf['listars']:
+    for ars in alternatif_conf["listars"]:
         if not Config.has_section(ars):
-           logger.error("format alternatif file %s : section %s missing" % (conffile, ars))
-           return {}
+            logger.error(
+                "format alternatif file %s : section %s missing" % (conffile, ars)
+            )
+            return {}
 
-    for ars in alternatif_conf['listars']:
-        if not (Config.has_option(ars, "port") and Config.has_option(ars, "server") and Config.has_option(ars, "guacamole_baseurl")):
-            logger.error("format alternatif file %s : section %s farmat error" % (conffile, ars))
+    for ars in alternatif_conf["listars"]:
+        if not (
+            Config.has_option(ars, "port")
+            and Config.has_option(ars, "server")
+            and Config.has_option(ars, "guacamole_baseurl")
+        ):
+            logger.error(
+                "format alternatif file %s : section %s farmat error" % (conffile, ars)
+            )
             return {}
         else:
-            alternatif_conf[ars]={}
-            alternatif_conf[ars]['port']=Config.getint(ars, 'port')
-            alternatif_conf[ars]['server']=Config.get(ars, 'server')
-            alternatif_conf[ars]['guacamole_baseurl']=Config.get(ars, 'guacamole_baseurl')
+            alternatif_conf[ars] = {}
+            alternatif_conf[ars]["port"] = Config.getint(ars, "port")
+            alternatif_conf[ars]["server"] = Config.get(ars, "server")
+            alternatif_conf[ars]["guacamole_baseurl"] = Config.get(
+                ars, "guacamole_baseurl"
+            )
     return alternatif_conf
 
 
@@ -338,8 +348,8 @@ class confParameter:
         Config = ConfigParser()
         namefileconfig = conffilename(typeconf)
         if not os.path.isfile(namefileconfig):
-            logger.error("file missing %s" % namefileconfig)
-            logger.error('verify type "agent machine or relayserver"')
+            logger.error("The configuration file %s is missing" % namefileconfig)
+
         Config.read(namefileconfig)
         if os.path.exists(namefileconfig + ".local"):
             Config.read(namefileconfig + ".local")
@@ -411,16 +421,15 @@ class confParameter:
                 if not os.path.exists(path_reconf_nomade):
                     fh = open(path_reconf_nomade, "w")
                     fh.write(
-                        "DO NOT REMOVE \n"
-                        "parameter alwaysnetreconf is True\n "
-                        "it will reconfigure the machine at every start"
+                        "DO NOT REMOVE THIS FILE\n"
+                        "The parameter alwaysnetreconf is set to True\n "
+                        "The agent will reconfigure the machine at every start"
                     )
                     fh.close()
             else:
                 if os.path.exists(path_reconf_nomade):
                     os.remove(path_reconf_nomade)
 
-        # syncthing true or fale
         self.syncthing_on = True
         if self.agenttype == "relayserver":
             self.syncthing_share = "/var/lib/syncthing-depl/depl_share"
@@ -450,8 +459,10 @@ class confParameter:
         if Config.has_option("syncthing-deploy", "syncthing_home"):
             self.syncthing_home = Config.get("syncthing-deploy", "syncthing_home")
 
-        logger.debug("activation syncthing %s" % self.syncthing_on)
-        # SYNCTHING #################
+        if self.syncthing_on:
+            logger.debug("Syncthing have been activated.")
+        else:
+            logger.debug("Syncthing have not been activated by configuration.")
 
         self.moderelayserver = "static"
         if Config.has_option("type", "moderelayserver"):
@@ -462,7 +473,19 @@ class confParameter:
             self.updating = Config.getboolean("updateagent", "updating")
         else:
             self.updating = 1
-        logger.info("updating %s" % self.updating)
+
+        if self.updating:
+            logger.debug("The agent is configured to autoupdate.")
+        else:
+            logger.debug(
+                "The agent will not auto udpdate. Modifications on the server will not be used on this client"
+            )
+
+        if Config.has_option("updateagent", "updatingplugin"):
+            self.updatingplugin = Config.getboolean("updateagent", "updatingplugin")
+        else:
+            self.updatingplugin = 1
+        logger.info("updating %s" % self.updatingplugin)
 
         if Config.has_option("updateagent", "updatingplugin"):
             self.updatingplugin = Config.getboolean("updateagent", "updatingplugin")
@@ -483,7 +506,6 @@ class confParameter:
             self.detectiontime = Config.getint("networkstatus", "detectiontime")
         else:
             self.detectiontime = 300
-        logger.info("detection time for networkstatus%s" % self.detectiontime)
 
         self.parametersscriptconnection = {}
 
@@ -611,7 +633,8 @@ class confParameter:
                         setattr(self, keyparameter, valueparameter)
                 else:
                     logger.warning(
-                        "load plugin %s : parameter File plugin [%s]: missing" % (z, namefile)
+                        "load plugin %s : parameter File plugin [%s]: missing"
+                        % (z, namefile)
                     )
         try:
             self.agentcommand = Config.get("global", "relayserver_agent")

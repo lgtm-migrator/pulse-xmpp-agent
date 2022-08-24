@@ -20,18 +20,14 @@
 # MA 02110-1301, USA.
 
 import sys
-import os
 from distutils.version import StrictVersion
 import logging
-import zipfile
-import platform
 from lib import utils
 
 RDPVERSION = "0.2"
 
 logger = logging.getLogger()
-
-plugin = {"VERSION": "1.1", "NAME": "updaterdp", "TYPE": "machine"} # fmt: skip
+plugin = {"VERSION": "1.1", "NAME": "updaterdp", "TYPE": "machine"}  # fmt: skip
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):

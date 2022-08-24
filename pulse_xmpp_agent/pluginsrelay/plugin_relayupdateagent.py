@@ -25,7 +25,6 @@
 import base64
 import json
 import os
-import sys
 import logging
 import zlib
 from time import sleep
@@ -33,8 +32,7 @@ from lib import utils
 import traceback
 
 logger = logging.getLogger()
-
-plugin = {"VERSION": "2.0", "NAME": "relayupdateagent", "TYPE": "relayserver"} # fmt: skip
+plugin = {"VERSION": "2.0", "NAME": "relayupdateagent", "TYPE": "relayserver"}  # fmt: skip
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):

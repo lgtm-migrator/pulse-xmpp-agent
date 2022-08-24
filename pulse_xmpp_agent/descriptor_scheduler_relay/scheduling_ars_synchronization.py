@@ -19,13 +19,11 @@ import MySQLdb
 import traceback
 import sys
 
-if sys.version_info >= (3,0,0):
+if sys.version_info >= (3, 0, 0):
     basestring = (str, bytes)
 
 logger = logging.getLogger()
-
-# WARNING: The plugin variable MUST be in one line.
-plugin = {"VERSION": "1.0.005", "NAME": "scheduling_ars_synchronization", "TYPE": "all", "SCHEDULED": True, } # fmt: skip
+plugin = {"VERSION": "1.1", "NAME": "scheduling_ars_synchronization", "TYPE": "relayserver", "SCHEDULED": True}  # fmt: skip
 
 SCHEDULE = {"schedule": "*/1 * * * *", "nb": -1}
 
@@ -386,9 +384,10 @@ def __read_conf_scheduling_ars_synchronization(xmppobject, pkgsdata):
 
 
 def finger_print_md5(file):
+    json_md5 = ""
     try:
         with open(file, "r") as source_file:
-            json_md5 = hashlib.md5(source_file.read()).hexdigest()
+            json_md5 = hashlib.md5(source_file.read().encode("utf-8")).hexdigest()
     except BaseException:
         json_md5 += ""
     return json_md5

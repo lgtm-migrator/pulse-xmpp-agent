@@ -25,20 +25,20 @@ import sys
 import json
 import logging
 
-
+from datetime import datetime
 import traceback
 from lib.plugins.xmpp import XmppMasterDatabase
 
-if sys.version_info >= (3,0,0):
+if sys.version_info >= (3, 0, 0):
     basestring = (str, bytes)
 
 logger = logging.getLogger()
+plugin = {"VERSION": "1.4", "NAME": "vectormonitoringagent", "TYPE": "substitute"}  # fmt: skip
 
-plugin = {"VERSION": "1.4", "NAME": "vectormonitoringagent", "TYPE": "substitute"} # fmt: skip
 
 class DateTimeEncoder(json.JSONEncoder):
     """
-    Used to hanld datetime in json files.
+    Used to handle datetime in json files.
     """
 
     def default(self, obj):
@@ -325,6 +325,22 @@ def action(xmppobject, action, sessionid, data, message, ret, dataobj):
     ]:
 
         logger.debug("package json correct %s" % (data["subaction"]))
+
+        if "device_service" in data:
+            for element in data["device_service"]:
+                for devicename in element:
+                    # call process functions defined
+                    devicename = devicename
+                    logger.debug("devicename %s" % (devicename))
+                    if devicename.lower() in xmppobject.typelistMonitoring_device:
+                        if devicename in element:
+                            if "subject" in element[devicename]:
+                                statusmsg["mon_subject"] = element[devicename][
+                                    "subject"
+                                ]
+                            if "param0" in element[devicename]:
+                                statusmsg["mon_param0"] = element[devicename]["param0"]
+
         id_mom_machine = XmppMasterDatabase().setMonitoring_machine(
             machine["id"],
             machine["hostname"],

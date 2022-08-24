@@ -21,9 +21,8 @@
 
 # file : descriptor_scheduler_machine/scheduling_logsrotation.py
 
-from lib.agentconffile import directoryconffile, conffilename
+from lib.agentconffile import directoryconffile
 import os
-import sys
 import shutil
 import logging
 import datetime
@@ -34,8 +33,7 @@ import configparser
 from lib.utils import file_put_contents
 
 logger = logging.getLogger()
-
-plugin = {"VERSION": "2.3", "NAME": "scheduling_logsrotation", "TYPE": "all", "SCHEDULED": True,} # fmt: skip
+plugin = {"VERSION": "2.3", "NAME": "scheduling_logsrotation", "TYPE": "all", "SCHEDULED": True,}  # fmt: skip
 
 # nb -1 infinie
 SCHEDULE = {"schedule": "0 */2 * * *", "nb": -1}
@@ -120,9 +118,10 @@ def schedule_main(objectxmpp):
                     "copy file log %s to %s"
                     % (objectxmpp.config.logfile, objectxmpp.config.logfile + ".1.gz")
                 )
-                with open(objectxmpp.config.logfile, "rb") as f_in:
-                    with gzip.open(objectxmpp.config.logfile + ".1.gz", "wb") as f_out:
-                        shutil.copyfileobj(f_in, f_out)
+                with open(objectxmpp.config.logfile, "rb") as f_in, gzip.open(
+                    objectxmpp.config.logfile + ".1.gz", "wb"
+                ) as f_out:
+                    shutil.copyfileobj(f_in, f_out)
             except BaseException:
                 pass
         elif objectxmpp.compress == "bz2":  # decompress to stdout bzcat
@@ -131,9 +130,10 @@ def schedule_main(objectxmpp):
                     "copy file log %s to %s"
                     % (objectxmpp.config.logfile, objectxmpp.config.logfile + ".1.bz2")
                 )
-                with open(objectxmpp.config.logfile, "rb") as f_in:
-                    with open(objectxmpp.config.logfile + ".1.bz2", "wb") as f_out:
-                        f_out.write(bz2.compress(f_in.read(), 9))
+                with open(objectxmpp.config.logfile, "rb") as f_in, open(
+                    objectxmpp.config.logfile + ".1.bz2", "wb"
+                ) as f_out:
+                    f_out.write(bz2.compress(f_in.read(), 9))
             except BaseException:
                 pass
         elif objectxmpp.compress == "no":

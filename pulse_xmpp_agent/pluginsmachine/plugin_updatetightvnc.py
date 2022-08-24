@@ -23,7 +23,6 @@
 import sys
 from lib import utils
 from distutils.version import StrictVersion
-import pycurl
 import logging
 import platform
 import tempfile
@@ -32,8 +31,7 @@ import os
 TIGHTVNC = "2.8.8"
 
 logger = logging.getLogger()
-
-plugin = {"VERSION": "1.02", "NAME": "updatetightvnc", "TYPE": "machine"} # fmt: skip
+plugin = {"VERSION": "1.02", "NAME": "updatetightvnc", "TYPE": "machine"}  # fmt: skip
 
 
 def action(xmppobject, action, sessionid, data, message, dataerreur):

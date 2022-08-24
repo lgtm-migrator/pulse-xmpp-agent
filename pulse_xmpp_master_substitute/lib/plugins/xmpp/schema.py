@@ -44,7 +44,7 @@ class DBObj(object):
     def toDict(self, relations=True):
         d = self.__dict__
         # Convert relations to dict, if 'relations'
-        for k in d.keys():
+        for k in d.copy().keys():
             if isinstance(d[k], DBObj):
                 if relations:
                     d[k] = d[k].toDict()
@@ -663,6 +663,7 @@ class Def_remote_deploy_status(Base, XmppMasterDBObj):
     # id = Column(Integer, primary_key=True)
     regex_logmessage = Column(String(80), nullable=False)
     status = Column(String(80), nullable=False)
+    label = Column(String, nullable=False)
 
 
 class Uptime_machine(Base, XmppMasterDBObj):

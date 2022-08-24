@@ -100,7 +100,7 @@ def fileviewer_path():
             destpath = os.path.join(rpm_python_path, "lib", "ressources", "fileviewer")
 
     elif sys.platform.startswith("darwin"):
-        logger.debug("Not implemented yet")
+        print("Not implemented yet")
 
     return destpath
 

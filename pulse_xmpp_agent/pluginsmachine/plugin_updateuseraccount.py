@@ -22,12 +22,10 @@
 import logging
 import json
 from lib import utils
-from slixmpp.exceptions import IqError
 import traceback
 
 logger = logging.getLogger()
-
-plugin = {"VERSION": "1.7", "NAME": "updateuseraccount", "TYPE": "machine"} # fmt: skip
+plugin = {"VERSION": "1.7", "NAME": "updateuseraccount", "TYPE": "machine"}  # fmt: skip
 
 
 def get_ars_key(xmppobject, remotejidars, timeout=15):

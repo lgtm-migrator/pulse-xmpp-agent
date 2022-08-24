@@ -20,7 +20,6 @@
 # MA 02110-1301, USA.
 # file  pulse_xmpp_agent/pluginsmachine/plugin_start.py
 
-import sys
 import os
 import logging
 from lib import utils
@@ -30,19 +29,23 @@ import re
 
 logger = logging.getLogger()
 DEBUGPULSEPLUGIN = 25
-
-plugin = {"VERSION": "2.1", "NAME": "start", "TYPE": "all"} # fmt: skip
+plugin = {"VERSION": "2.1", "NAME": "start", "TYPE": "all"}  # fmt: skip
 
 
 def read_conf_plugin_start(objectxmpp):
     objectxmpp.liststartplugin = []
     if objectxmpp.config.agenttype in ["machine"]:
         configfilename = os.path.join(directoryconffile(), "start_machine.ini")
-    elif objectxmpp.config.agenttype in ["relay"]:
+    elif objectxmpp.config.agenttype in ["relayserver"]:
         configfilename = os.path.join(directoryconffile(), "start_relay.ini")
+    else:
+        logger.error(
+            "The %s agenttype is not supported in this function, it must be machine or relayserver."
+            % objectxmpp.config.agenttype
+        )
+
     objectxmpp.time_differed_start = 10
     if os.path.isfile(configfilename):
-        # lit la configuration
         Config = configparser.ConfigParser()
         Config.read(configfilename)
         if os.path.isfile(configfilename + ".local"):

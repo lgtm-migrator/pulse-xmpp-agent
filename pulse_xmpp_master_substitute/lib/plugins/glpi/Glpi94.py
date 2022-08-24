@@ -78,8 +78,9 @@ from distutils.version import LooseVersion
 from lib.configuration import confParameter
 from lib.plugins.xmpp import XmppMasterDatabase
 
-if sys.version_info >= (3,0,0):
+if sys.version_info >= (3, 0, 0):
     basestring = (str, bytes)
+
 
 class Singleton(object):
     def __new__(type, *args):
@@ -788,6 +789,29 @@ class Glpi94(DatabaseHelper):
             autoload=True,
         )
         mapper(RegContents, self.regcontents)
+
+        # items contents
+        self.computersitems = Table(
+            "glpi_computers_items",
+            self.metadata,
+            Column("computers_id", Integer, ForeignKey("glpi_computers_pulse.id")),
+            autoload=True,
+        )
+        mapper(Computersitems, self.computersitems)
+
+        self.peripherals = Table("glpi_peripherals", self.metadata, autoload=True)
+        mapper(Peripherals, self.peripherals)
+
+        self.glpi_view_peripherals_manufacturers = Table(
+            "glpi_view_peripherals_manufacturers",
+            self.metadata,
+            Column("id", Integer, primary_key=True),
+            Column(
+                "items_id", Integer, ForeignKey("glpi_peripherals.manufacturers_id")
+            ),
+            autoload=True,
+        )
+        mapper(Peripheralsmanufacturers, self.glpi_view_peripherals_manufacturers)
 
     # internal query generators
     def __filter_on(self, query):
@@ -2401,11 +2425,11 @@ class Glpi94(DatabaseHelper):
         machines_uuid_size = len(a_machine_uuid)
         all_computers = session.query(Machine)
         all_computers = self.filterOnUUID(all_computers, a_machine_uuid).all()
-        all_computers = Set([toUUID(str(m.id)) for m in all_computers])
+        all_computers = set([toUUID(str(m.id)) for m in all_computers])
         if len(all_computers) != machines_uuid_size:
             self.logger.info(
                 "some machines have been deleted since that list was generated (%s)"
-                % (str(Set(a_machine_uuid) - all_computers))
+                % (str(set(a_machine_uuid) - all_computers))
             )
             machines_uuid_size = len(all_computers)
         size = 1
@@ -2417,9 +2441,9 @@ class Glpi94(DatabaseHelper):
             return True
         elif (not all) and len(ret) > 0:
             return True
-        ret = Set([toUUID(str(m.id)) for m in ret])
+        ret = set([toUUID(str(m.id)) for m in ret])
         self.logger.info(
-            "dont have permissions on %s" % (str(Set(a_machine_uuid) - ret))
+            "dont have permissions on %s" % (str(set(a_machine_uuid) - ret))
         )
         return False
 
@@ -6118,6 +6142,18 @@ class RuleAction(DbTOA):
 
 
 class OsVersion(DbTOA):
+    pass
+
+
+class Peripherals(DbTOA):
+    pass
+
+
+class Peripheralsmanufacturers(DbTOA):
+    pass
+
+
+class Computersitems(DbTOA):
     pass
 
 

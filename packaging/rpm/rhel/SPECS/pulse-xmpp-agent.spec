@@ -48,6 +48,7 @@ Requires:       python-crypto
 Requires:       python-cherrypy
 Requires:       net-tools
 Requires:       jq
+Requires:       python3-distro
 
 Obsoletes:     pulse-xmpp-agent < 2.0.7
 Provides:      pulse-xmpp-agent = %version
@@ -186,6 +187,7 @@ systemctl daemon-reload
 %_prefix/lib/systemd/system/pulse-xmpp-master-substitute-deployment.service
 %_prefix/lib/systemd/system/pulse-xmpp-master-substitute-reconfigurator.service
 %_prefix/lib/systemd/system/pulse-xmpp-master-substitute-monitoring.service
+%_prefix/lib/systemd/system/pulse-xmpp-master-substitute-master.service
 %_var/lib/pulse2/script_monitoring/
 
 
