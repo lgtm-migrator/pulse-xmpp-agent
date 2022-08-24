@@ -58,6 +58,7 @@ import time
 from datetime import datetime
 import imp
 import requests
+from requests.exceptions import Timeout
 from Crypto import Random
 from Crypto.Cipher import AES
 import tarfile
@@ -4080,3 +4081,57 @@ class file_message_iq:
             msgdump = """%s : %s""" % (date_time, textmsg)
             filename = os.path.join(self.base_message, "%s.send" % id_iq)
             file_put_contents_w_a(filename, textmsg, option="a")
+
+
+class kb_catalogue:
+    """
+    This class is used to get the list of the available kb
+    usage:
+        print(kb_catalogue().KB_update_exits("KB4586864"))
+    """
+
+    URL = "https://www.catalog.update.microsoft.com/Search.aspx"
+    filter = "We did not find any results for"
+
+    def __init__(self):
+        pass
+
+    def KB_update_exits(self, location):
+        """
+        Used to know if a Kb is exists or not.
+
+        Returns:
+            It returns True if the kb exists, False othewise.
+        """
+        PARAMS = {"q": location}
+        status, textresult = self.__get_requests(kb_catalogue.URL, params=PARAMS)
+        if status == 200 and textresult.find(kb_catalogue.filter) == -1:
+            return True
+
+        return False
+
+    def __get_requests(self, url, params, timeout=5):
+        """
+        This function sends a get request to the `url`
+        Args:
+            url: The URL used to check the kb
+            params:
+            timeout: Default timeout is 5seconds
+
+
+        Returns:
+            It returns the status and the content as Text.
+            It returns 200 if the answer is correct.
+            It returns 408 is the answer is empty (because of a timeout for example).
+        """
+        status = 408  # error timeout
+        text_result = ""
+        try:
+            r = requests.get(url=url, params=params, timeout=timeout)
+            status = r.status_code
+            if status == 200:
+                text_result = r.text
+        except Timeout:
+            status = (408,)
+
+        return status, text_result
