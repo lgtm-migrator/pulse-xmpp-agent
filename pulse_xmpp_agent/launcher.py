@@ -24,6 +24,7 @@ from optparse import OptionParser
 import os
 import sys
 import subprocess
+from pathlib import Path
 
 from lib.utils import (
     testagentconf,
@@ -34,25 +35,41 @@ from lib.utils import (
     file_put_contents,
 )
 
-filePath = os.path.dirname(os.path.realpath(__file__))
-
 if __name__ == "__main__":
-    file_put_contents(
-        os.path.join(
-            os.path.dirname(os.path.realpath(__file__)), "INFOSTMP", "pidlauncher"
-        ),
-        "%s" % os.getpid(),
-    )
+    # This shortcut is used for script paths, not for exec or (reading /writing) file we need the real path
+    path_programfiles = Path(r'"%PROGRAMFILES%"')
+
+    # Real path to python folder (windows)
+    path_python = Path(r'C:\"Program Files"\Python37')
+
+    # Real path to agent folder, still ok for unix systems
+    filePath = Path(os.path.dirname(os.path.realpath(__file__)))
+
+    # Used to read / write pidlauncher file: real address
+    file_pidlauncher = filePath / "INFOSTMP" / "pidlauncher"
+
+    pathagent = Path(os.path.dirname(os.path.realpath(__file__)))
+    pathagentwin = path_programfiles/ "Python37" / "Lib" / "site-packages" / "pulse_xmpp_agent"
+
+    # Only used by windows
+    launcher =  pathagentwin / "launcher.py"
+    connectionagent = pathagentwin /  "connectionagent.py"
+    agentxmpp = pathagentwin / "agentxmpp.py"
+
+    pythonexec = path_python / "python.exe"
+
+
+
+    #knokno
+    print("file_pidlauncher : %s"%file_pidlauncher)
+
+    file_put_contents(file_pidlauncher, "%s" % os.getpid())
     if sys.platform.startswith("win"):
         try:
             result = subprocess.check_output(
                 [
                     "icacls",
-                    os.path.join(
-                        os.path.dirname(os.path.realpath(__file__)),
-                        "INFOSTMP",
-                        "pidlauncher",
-                    ),
+                    "%s"%(filePath / "INFOSTMP" / "pidlauncher"),
                     "/setowner",
                     "pulse",
                     "/t",
@@ -114,13 +131,7 @@ if __name__ == "__main__":
     if testspeedagent:
         print("search configuration from master")
 
-    pathagent = os.path.join(os.path.dirname(os.path.realpath(__file__)))
 
-    launcher = os.path.join(pathagent, "launcher.py")
-    connectionagent = os.path.join(pathagent, "connectionagent.py")
-    agentxmpp = os.path.join(pathagent, "agentxmpp.py")
-
-    pythonexec = "C:\\python27\\python.exe"
 
     os.chdir(pathagent)
     if not opts.consoledebug:
