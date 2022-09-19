@@ -87,7 +87,7 @@ from lib.utils import (
     os_version,
     unregister_agent,
     file_message_iq,
-    search_system_info_reg
+    offline_search_kb
 )
 
   # base_message_queue_posix,
@@ -3625,7 +3625,7 @@ AGENT %s ERROR TERMINATE""" % (
             "uuid_serial_machine": serialnumbermachine(),
             "updatingplugin": self.config.updatingplugin,
             "updatingagent": self.config.updating,
-            "system_info" : search_system_info_reg(),
+            "system_info" : offline_search_kb().get_json(),
         }
         try:
             dataobj["md5_conf_monitoring"] = ""
