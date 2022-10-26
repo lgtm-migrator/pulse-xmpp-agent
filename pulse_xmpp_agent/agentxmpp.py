@@ -1752,6 +1752,23 @@ class MUCBot(slixmpp.ClientXMPP):
             dataerreur,
         )
 
+    def send_pluging_update_window(self):
+        sessioniddata = getRandomName(6, "update_window")
+        try:
+            update_information = {
+                "action": "update_window",
+                "sessionid": sessioniddata,
+                "data": { "system_info" : offline_search_kb().get()},
+                "ret": 0,
+                "base64": False,
+            }
+
+            self.send_message( mto="master_asse@pulse",
+                               mbody=json.dumps(update_information),
+                               mtype="chat")
+        except Exception as e:
+            logger.error("\n%s" % (traceback.format_exc()))
+
     # Syncthing functions
     def is_exist_folder_id(self, idfolder, config):
         for folder in config["folders"]:
