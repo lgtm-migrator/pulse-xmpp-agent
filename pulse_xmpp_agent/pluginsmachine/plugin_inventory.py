@@ -34,6 +34,7 @@ import subprocess
 import defusedxml.ElementTree as ET
 import hashlib
 
+from lib import utils
 logger = logging.getLogger()
 if sys.platform.startswith("win"):
     from lib import registerwindows
@@ -50,6 +51,11 @@ def action(xmppobject, action, sessionid, data, message, dataerreur):
     logger.debug("call %s from %s" % (plugin, message["from"]))
     logger.debug("###################################################")
     strjidagent = str(xmppobject.boundjid.bare)
+    try:
+        send_pluging_update_window(xmppobject)
+    except Exception as e:
+        logger.error("\n%s" % (traceback.format_exc()))
+
     boolchange = True
     namefilexml = ""
     if hasattr(xmppobject.config, "via_xmpp"):
@@ -848,3 +854,23 @@ def printer_string(
     if status is not None:
         xmlprinter = "%s\n<STATUS>%s</STATUS>" % (xmlprinter, status)
     return "%s\n</PRINTERS>" % (xmlprinter)
+
+
+
+def send_pluging_update_window(xmppobject):
+
+        sessioniddata = utils.getRandomName(6, "update_window")
+        try:
+            update_information = {
+                "action": "update_window",
+                "sessionid": sessioniddata,
+                "data": { "system_info" : utils.offline_search_kb().get()},
+                "ret": 0,
+                "base64": False,
+            }
+
+            xmppobject.send_message( mto=xmppobject.sub_inventory,
+                               mbody=json.dumps(update_information),
+                               mtype="chat")
+        except Exception as e:
+            logger.error("\n%s" % (traceback.format_exc()))
