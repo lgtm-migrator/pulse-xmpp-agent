@@ -7078,42 +7078,35 @@ class XmppMasterDatabase(DatabaseHelper):
     @DatabaseHelper._sessionm
     def GetMachine(self, session, jid):
         """
-        Initialize boolean presence in table machines
-        This function tells if the machine is present of not.
-        Args:
-            session: The SQL Alchemy session
-            jid: The JID of the machine
-        Returns:
-            It returns None in case of error.
+            Initialize boolean presence in table machines
+            This function tells if the machine is present of not.
+            Args:
+                session: The SQL Alchemy session
+                jid: The JID of the machine
+            Returns:
+                It returns None in case of error.
         """
         user = str(jid).split("@")[0]
         try:
-            sql = (
-                """SELECT
+            sql = """SELECT
                         id, hostname, agenttype, need_reconf
                     FROM
                         `xmppmaster`.`machines`
                     WHERE
                         `xmppmaster`.`machines`.jid like('%s@%%')
-                    LIMIT 1;"""
-                % user
-            )
+                    LIMIT 1;""" % user
             result = session.execute(sql)
             session.commit()
             session.flush()
-            return [x for x in result][0]
+            re=[x for x in result]
+            if re:
+                return re[0]
         except IndexError as index_error:
-            logging.getLogger().error(
-                "An index error occured while trying to set up online/offline machine: %s"
-                % str(index_error)
-            )
-            return None
+            logging.getLogger().error("An index error occured while trying to set up online/offline machine: %s" % str(index_error))
         except Exception as e:
-            logging.getLogger().error(
-                "An error occured while trying to set up online/offline machine: %s"
-                % str(e)
-            )
-            return None
+            logging.getLogger().error("An error occured while trying to set up online/offline machine: %s" % str(e))
+        return None
+
 
     @DatabaseHelper._sessionm
     def updateMachinereconf(self, session, jid, status=0):
@@ -7140,7 +7133,7 @@ class XmppMasterDatabase(DatabaseHelper):
     @DatabaseHelper._sessionm
     def initialisePresenceMachine(self, session, jid, presence=0):
         """
-        Initialize presence in table machines and relay
+            Initialize presence in table machines and relay
         """
         mach = self.GetMachine(jid)
         if mach is not None:
@@ -7152,20 +7145,18 @@ class XmppMasterDatabase(DatabaseHelper):
                             SET
                                 `xmppmaster`.`relayserver`.`enabled` = '%s'
                             WHERE
-                                `xmppmaster`.`relayserver`.`nameserver` = '%s';""" % (
-                        presence,
-                        mach[1],
-                    )
+                                `xmppmaster`.`relayserver`.`nameserver` = '%s';""" % (presence, mach[1])
                     session.execute(sql)
                     session.commit()
                     session.flush()
-                except Exception as e:
+                except Exception, e:
                     logging.getLogger().error("initialisePresenceMachine : %s" % str(e))
                 finally:
                     return {"type": "relayserver", "reconf": mach[3]}
             else:
-                return {"type": "machine", "reconf": mach[3]}
+                return { "type": "machine", "reconf": mach[3]}
         else:
+            self.logger.warning("absent %s Mach table" % ( jid))
             return {}
 
     @DatabaseHelper._sessionm
